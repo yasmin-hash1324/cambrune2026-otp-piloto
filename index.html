@@ -58,13 +58,15 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
 .adminConfirm{margin-top:18px;padding:15px;border:1px solid #E1E8DD;border-radius:12px;background:#FFFFFF}
 .adminConfirm h4{margin:0 0 8px;font-size:16px}
 .adminConfirm p{color:#50695A;line-height:1.5}
-.adminConfirm label{display:block;font-size:12px;font-weight:650;margin-top:10px}
-.adminConfirm input[type="email"],.adminConfirm input[type="text"]{box-sizing:border-box;width:100%;max-width:460px;border:1px solid #BFD2C3;border-radius:8px;padding:10px;margin-top:5px;color:#1B3829;background:#FFF}
-.adminConfirm .adminCheckLabel{display:flex;gap:9px;align-items:flex-start;max-width:650px;margin:15px 0}
-.adminConfirm .adminCheckLabel input{flex-shrink:0;margin:2px 0 0}
 .adminConfirm .adminSendOne{width:auto;margin:7px 0 0}
-.adminConfirm .adminSendOne:disabled{opacity:.5;cursor:not-allowed}
+.adminConfirm button:disabled{opacity:.5;cursor:not-allowed}
 .adminConfirm #adminSendStatus{font-size:12px}
+.adminFinalConfirm{margin-top:14px;padding:15px;background:#F7F9F5;border:1px solid #C7D8CA;border-radius:10px}
+.adminFinalConfirm strong{display:block;color:#173B29}
+.adminFinalConfirm p{margin:6px 0 12px;font-size:12px}
+.adminFinalActions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.adminFinalActions button{width:auto;margin:0;font-size:13px}
+@media(max-width:540px){.adminConfirm .adminSendOne,.adminFinalActions button{width:100%}}
 .adminCheckBtn{display:inline-block;width:auto !important;margin:0 !important;padding:7px 11px !important;font-size:12px !important;white-space:nowrap}
 .adminTable td:last-child{text-align:center}
 </style>
@@ -148,14 +150,17 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
       <p><strong>Estado de envío:</strong> <span id="adminPreviewState"></span></p>
       <p class="adminHint">La vista previa no crea cuentas ni envía correos. Para efectuar el envío real tendrás que completar la confirmación individual.</p>
       <div id="adminConfirm" class="adminConfirm" hidden>
-        <h4>Confirmación de envío individual</h4>
-        <p>Antes de continuar, confirma que el destinatario está informado y que has comprobado su correo. Ningún envío es automático.</p>
-        <label for="adminConfirmEmail">Escribe el correo del destinatario exactamente como aparece arriba</label>
-        <input id="adminConfirmEmail" type="email" autocomplete="off" placeholder="Correo completo del participante">
-        <label for="adminConfirmPhrase">Escribe ENVIAR INVITACION</label>
-        <input id="adminConfirmPhrase" type="text" autocomplete="off" placeholder="ENVIAR INVITACION">
-        <label class="adminCheckLabel"><input id="adminConfirmConsent" type="checkbox"> Confirmo que deseo enviar una invitación individual a este destinatario.</label>
-        <button id="adminSendOne" class="cta adminSendOne" type="button" disabled>Enviar invitación individual</button>
+        <h4>Invitar a este participante</h4>
+        <p>Se enviará una invitación únicamente al correo autorizado que aparece arriba.</p>
+        <button id="adminSendOne" class="cta adminSendOne" type="button">Enviar invitación</button>
+        <div id="adminSendConfirm" class="adminFinalConfirm" hidden>
+          <strong>¿Confirmas el envío?</strong>
+          <p id="adminConfirmTarget"></p>
+          <div class="adminFinalActions">
+            <button id="adminCancelSend" class="secondary" type="button">Cancelar</button>
+            <button id="adminConfirmSend" class="cta" type="button">Sí, enviar invitación</button>
+          </div>
+        </div>
         <p id="adminSendStatus" role="status" aria-live="polite"></p>
       </div>
     </div>
@@ -166,7 +171,7 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
       <tbody id="adminRows"></tbody>
     </table>
   </div>
-  <p class="adminHint">«Vista previa» no envía correos. El envío real exige introducir el correo exacto, escribir ENVIAR INVITACION, marcar la confirmación y pulsar «Enviar invitación individual».</p>
+  <p class="adminHint">La vista previa no envía correos. Para enviar, revisa el destinatario y confirma el envío en dos pasos. Los envíos masivos no están habilitados.</p>
 </section>
 </main>
 <footer class="footer">Cambrune 2026 · V5.0 piloto · Identidades verificadas por Supabase Auth · Permisos controlados mediante políticas RLS</footer>
@@ -299,27 +304,16 @@ function resetAdminPreview(){
   byId("adminPreview").hidden=true;
   byId("adminPreviewDetails").hidden=true;
   byId("adminConfirm").hidden=true;
+  byId("adminSendConfirm").hidden=true;
   byId("adminPreviewStatus").textContent="";
   byId("adminPreviewName").textContent="";
   byId("adminPreviewEmail").textContent="";
   byId("adminPreviewState").textContent="";
-  byId("adminConfirmEmail").value="";
-  byId("adminConfirmPhrase").value="";
-  byId("adminConfirmConsent").checked=false;
+  byId("adminConfirmTarget").textContent="";
   byId("adminSendStatus").textContent="";
-  byId("adminSendOne").disabled=true;
-}
-function updateAdminConfirmation(){
-  const t=state.adminPreviewTarget;
-  const email=byId("adminConfirmEmail").value.trim().toLowerCase();
-  const phrase=byId("adminConfirmPhrase").value.trim();
-  const ready=!!t && !state.adminSending
-    && t.email.toLowerCase()===email
-    && phrase==="ENVIAR INVITACION"
-    && byId("adminConfirmConsent").checked
-    && t.estado==="sin_enviar";
-  byId("adminSendOne").disabled=!ready;
-  return ready;
+  byId("adminSendOne").disabled=false;
+  byId("adminConfirmSend").disabled=false;
+  byId("adminCancelSend").disabled=false;
 }
 async function previewAdminInvitation(person,button){
   if(!state.client||byId("adminOpenBtn").hidden||!person.invitacion_id)return;
@@ -351,22 +345,34 @@ async function previewAdminInvitation(person,button){
         estado:String(data.estado_envio)
       };
       byId("adminConfirm").hidden=false;
-      updateAdminConfirmation();
+      byId("adminSendConfirm").hidden=true;
     }
   }catch(e){
     byId("adminPreviewStatus").textContent="No se pudo validar esta invitación: "+String(e.message||e);
     byId("adminPreviewDetails").hidden=true;
   }finally{button.disabled=false}
 }
-byId("adminConfirmEmail").addEventListener("input",updateAdminConfirmation);
-byId("adminConfirmPhrase").addEventListener("input",updateAdminConfirmation);
-byId("adminConfirmConsent").addEventListener("change",updateAdminConfirmation);
-byId("adminSendOne").addEventListener("click",async()=>{
-  if(!updateAdminConfirmation()||!state.client)return;
+byId("adminSendOne").addEventListener("click",()=>{
   const target=state.adminPreviewTarget;
-  // No se envía nada hasta que se pulsa el botón habilitado con tres confirmaciones.
+  if(!target||target.estado!=="sin_enviar"||state.adminSending||byId("adminOpenBtn").hidden)return;
+  byId("adminConfirmTarget").textContent=target.nombre+" · "+target.email;
+  byId("adminSendConfirm").hidden=false;
+  byId("adminConfirmSend").disabled=false;
+  byId("adminSendStatus").textContent="Este paso todavía no envía el correo.";
+});
+byId("adminCancelSend").addEventListener("click",()=>{
+  if(state.adminSending)return;
+  byId("adminSendConfirm").hidden=true;
+  byId("adminSendStatus").textContent="Envío cancelado. No se ha enviado ningún correo.";
+});
+byId("adminConfirmSend").addEventListener("click",async()=>{
+  const target=state.adminPreviewTarget;
+  if(!target||target.estado!=="sin_enviar"||state.adminSending||
+     byId("adminSendConfirm").hidden||byId("adminOpenBtn").hidden||!state.client)return;
   state.adminSending=true;
   byId("adminSendOne").disabled=true;
+  byId("adminConfirmSend").disabled=true;
+  byId("adminCancelSend").disabled=true;
   byId("adminSendStatus").textContent="Solicitando a Supabase el envío de la invitación individual...";
   try{
     const {data,error}=await state.client.functions.invoke("cambrune-send-invite",{
@@ -391,11 +397,12 @@ byId("adminSendOne").addEventListener("click",async()=>{
   }catch(e){
     byId("adminSendStatus").textContent="Estado del envío pendiente de revisión: "+String(e.message||e)+
       " No repitas el envío. Actualiza la lista y verifica el registro en Supabase.";
-    // Nunca se habilita un reintento automático tras un fallo de red o envío incierto.
     state.adminPreviewTarget=null;
+    byId("adminConfirmSend").disabled=true;
     byId("adminSendOne").disabled=true;
   }finally{
     state.adminSending=false;
+    byId("adminCancelSend").disabled=false;
   }
 });
 
