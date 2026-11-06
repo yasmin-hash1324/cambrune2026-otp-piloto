@@ -113,19 +113,91 @@ async function loadProfile(user){
   const client=state.client;
   if(!user||!client)return;
   show("result","Estado de tu acceso");
+  byId("resultTag").className="tag warn";
+  byId("resultTag").textContent="Comprobando identidad";
+  byId("displayTitle").textContent="Consultando el padrón...";
   byId("displayEmail").textContent=user.email||"Correo autenticado";
+  byId("resultText").textContent="Estamos comprobando tu inscripción y los cargos autorizados.";
   byId("rolesList").replaceChildren();
-  const {data:p,error:err}=await client.from("cambrune_personas").select("id,nombre_completo,tipo").eq("usuario_auth",user.id).maybeSingle();
-  if(err){byId("displayTitle").textContent="Identidad comprobada";byId("resultText").textContent="No se pudo consultar tu perfil de Cambrune. Comprueba las políticas RLS y la conectividad.";notice("Problema al consultar el padrón; no se ha concedido acceso.","error");return}
-  if(!p){byId("resultTag").textContent="Vinculación pendiente";byId("displayTitle").textContent="Correo verificado";byId("resultText").textContent="Supabase confirmó tu identidad, pero tu cuenta todavía no está vinculada con el padrón autorizado de Cambrune. Esta situación es normal durante la primera prueba. Presidencia tendrá que habilitarte mediante el procedimiento administrativo.";return}
-  const {data:roles,error:roleError}=await client.from("cambrune_roles").select("rol,comision_id").eq("persona_id",p.id);
-  if(roleError){byId("displayTitle").textContent=p.nombre_completo;byId("resultText").textContent="Perfil vinculado, pero los roles no pudieron verificarse. Se mantiene el acceso restringido.";notice("No fue posible verificar los cargos.","error");return}
+
+  async function readPerson(){
+    return client.from("cambrune_personas")
+      .select("id,nombre_completo,tipo,activo")
+      .eq("usuario_auth",user.id).maybeSingle();
+  }
+
+  let {data:p,error:err}=await readPerson();
+  if(err){
+    byId("displayTitle").textContent="Identidad comprobada";
+    byId("resultText").textContent="No se pudo consultar el padrón. Por seguridad no se concede acceso.";
+    notice("No se pudo consultar el padrón de Cambrune.","error");
+    return;
+  }
+
+  if(!p){
+    // El servidor relaciona el correo confirmado con una invitación pendiente.
+    // Nunca se aceptan IDs, cargos ni correos suministrados por el navegador.
+    const {data:activation,error:activationError}=await client.rpc("cambrune_activar_mi_cuenta");
+    if(activationError){
+      byId("resultTag").textContent="Acceso no habilitado";
+      byId("displayTitle").textContent="Identidad verificada";
+      byId("resultText").textContent="La vinculación no pudo completarse. Contacta con la administración del proyecto.";
+      notice("No se pudo completar la vinculación. No se concedieron permisos.","error");
+      return;
+    }
+
+    if(activation==="VINCULADA"||activation==="YA_VINCULADA"){
+      const refreshed=await readPerson();
+      p=refreshed.data;
+      if(refreshed.error||!p){
+        byId("resultTag").textContent="Acceso en revisión";
+        byId("displayTitle").textContent="Cuenta verificada";
+        byId("resultText").textContent="La activación se procesó, pero todavía no se puede recuperar el perfil. Actualiza la página y, si persiste, informa a Secretaría.";
+        notice("El padrón todavía no confirma los permisos de esta sesión.","error");
+        return;
+      }
+    }else if(activation==="SIN_INVITACION"){
+      byId("resultTag").textContent="Vinculación pendiente";
+      byId("displayTitle").textContent="Correo verificado";
+      byId("resultText").textContent="Tu identidad está verificada, pero este correo no tiene una invitación pendiente en el padrón de Cambrune. La administración debe autorizarlo antes de asignar cargos.";
+      return;
+    }else{
+      byId("resultTag").textContent="Acceso no habilitado";
+      byId("displayTitle").textContent="Identidad verificada";
+      byId("resultText").textContent="No fue posible autorizar esta cuenta. Solicita una revisión a la administración del proyecto.";
+      notice("La solicitud de activación no fue autorizada.","error");
+      return;
+    }
+  }
+
+  if(p.activo!==true){
+    byId("resultTag").textContent="Cuenta inactiva";
+    byId("displayTitle").textContent=p.nombre_completo;
+    byId("resultText").textContent="Tu registro está inactivo. Comunícate con la administración; no se muestran permisos.";
+    return;
+  }
+
+  const {data:roles,error:roleError}=await client.from("cambrune_roles")
+    .select("rol,comision_id").eq("persona_id",p.id);
+  if(roleError){
+    byId("resultTag").textContent="Cargos no disponibles";
+    byId("displayTitle").textContent=p.nombre_completo;
+    byId("resultText").textContent="Tu perfil está vinculado, pero no se pudieron comprobar sus cargos. Se mantiene el acceso restringido.";
+    notice("No fue posible verificar los cargos.","error");
+    return;
+  }
+
   byId("resultTag").textContent="Padrón confirmado";
   byId("resultTag").className="tag";
   byId("displayTitle").textContent=p.nombre_completo;
-  (roles||[]).forEach(r=>{const pill=document.createElement("span");pill.textContent=r.rol+(r.comision_id?" · Comisión "+r.comision_id:"");byId("rolesList").appendChild(pill)});
-  byId("resultText").textContent="Cuenta verificada y vinculada correctamente. Esta versión piloto comprueba identidad y roles; la navegación hacia los dashboards de V5.0 se habilitará en la siguiente fase.";
+  (roles||[]).forEach(r=>{
+    const pill=document.createElement("span");
+    pill.textContent=r.rol+(r.comision_id?" · Comisión "+r.comision_id:"");
+    byId("rolesList").appendChild(pill);
+  });
+  byId("resultText").textContent="Cuenta verificada y vinculada correctamente. Esta versión piloto comprueba identidad y roles; los dashboards y permisos documentales se habilitarán en fases posteriores.";
 }
+
 byId("emailForm").addEventListener("submit",async e=>{e.preventDefault();if(!state.client)return;
   const email=byId("email").value.trim().toLowerCase();if(!email)return;
   busy("sendBtn",true);
