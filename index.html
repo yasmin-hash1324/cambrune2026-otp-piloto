@@ -99,6 +99,8 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
     <div class="account" style="margin-top:14px"><strong id="displayTitle"></strong><small id="displayEmail"></small><div id="rolesList" class="roleList"></div></div>
     <p id="resultText" class="muted" style="margin-top:16px"></p>
     <button id="adminOpenBtn" type="button" class="cta" hidden>Gestión de usuarios · Presidencia / Vicepresidencia</button>
+    <button id="securityTestBtn" type="button" class="secondary" hidden>Comprobar protección del servidor</button>
+    <p id="securityTestResult" class="muted" hidden role="status" aria-live="polite"></p>
     <button id="logoutBtn" type="button" class="secondary">Cerrar sesión</button>
   </div>
   <div class="smallDivider"></div>
@@ -168,6 +170,8 @@ async function loadProfile(user){
   byId("resultText").textContent="Estamos comprobando tu inscripción y los cargos autorizados.";
   byId("rolesList").replaceChildren();
   byId("adminOpenBtn").hidden=true;
+  byId("securityTestBtn").hidden=true;
+  byId("securityTestResult").hidden=true;
   byId("adminBoard").hidden=true;
   state.adminUsers=[];
 
@@ -209,6 +213,7 @@ async function loadProfile(user){
       }
     }else if(activation==="SIN_INVITACION"){
       byId("resultTag").textContent="Vinculación pendiente";
+      byId("securityTestBtn").hidden=false;
       byId("displayTitle").textContent="Correo verificado";
       byId("resultText").textContent="Tu identidad está verificada, pero este correo no tiene una invitación pendiente en el padrón de Cambrune. La administración debe autorizarlo antes de asignar cargos.";
       return;
@@ -313,6 +318,35 @@ async function loadAdminUsers() {
     byId("adminRows").replaceChildren();
   }finally{byId("adminRefresh").disabled=false}
 }
+byId("securityTestBtn").addEventListener("click",async()=>{
+  const btn=byId("securityTestBtn");
+  const result=byId("securityTestResult");
+  if(!state.client)return;
+  btn.disabled=true;
+  result.hidden=false;
+  result.textContent="Verificando si el servidor rechaza esta cuenta sin permisos...";
+  try{
+    const response=await state.client.functions.invoke("cambrune-admin-users",{body:{action:"list"}});
+    if(response.error){
+      const status=response.error.context?.status;
+      if(status===403){
+        result.textContent="PRUEBA SUPERADA: el servidor ha rechazado la solicitud (HTTP 403). No se han mostrado datos de otros participantes.";
+      }else if(status===401){
+        result.textContent="El servidor ha rechazado la solicitud (HTTP 401). Debemos comprobar la sesión antes de dar por validada la comprobación de roles.";
+      }else{
+        result.textContent="Prueba inconclusa: la función devolvió un error de conexión o ejecución"+(status?" (HTTP "+status+")":"")+". No presupongas que el control funciona.";
+      }
+    }else if(response.data&&Array.isArray(response.data.participantes)){
+      result.textContent="ALERTA DE SEGURIDAD: el servidor respondió con datos del padrón para una cuenta sin autorización. No habilitar invitaciones y avisar a la administración.";
+    }else{
+      result.textContent="Prueba inconclusa: respuesta inesperada del servidor. Revisar configuración.";
+    }
+  }catch(err){
+    result.textContent="Prueba inconclusa: no se pudo consultar el servidor. Comprueba la conexión.";
+  }finally{
+    btn.disabled=false;
+  }
+});
 byId("adminOpenBtn").addEventListener("click",()=>{
   byId("adminBoard").hidden=false;
   byId("adminBoard").scrollIntoView({behavior:"smooth",block:"start"});
@@ -367,7 +401,7 @@ byId("resendBtn").addEventListener("click",async()=>{
   finally{busy("resendBtn",false)}
 });
 byId("changeEmail").addEventListener("click",()=>{byId("otp").value="";show("login","Acceso personal")});
-byId("logoutBtn").addEventListener("click",async()=>{if(state.client)await state.client.auth.signOut();state.email="";state.adminUsers=[];byId("adminBoard").hidden=true;byId("adminOpenBtn").hidden=true;show("login","Acceso personal");notice("Sesión cerrada correctamente.","success")});
+byId("logoutBtn").addEventListener("click",async()=>{if(state.client)await state.client.auth.signOut();state.email="";state.adminUsers=[];byId("adminBoard").hidden=true;byId("adminOpenBtn").hidden=true;byId("securityTestBtn").hidden=true;byId("securityTestResult").hidden=true;show("login","Acceso personal");notice("Sesión cerrada correctamente.","success")});
 window.addEventListener("DOMContentLoaded",restore);
 })();
 </script>
