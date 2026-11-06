@@ -29,6 +29,28 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
 .footer{max-width:1150px;margin:36px auto 20px;padding:16px 20px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
 .bullet{border-left:3px solid var(--gold);padding-left:12px;margin:19px 0;font-size:12px;color:#52695A}
 @media(max-width:790px){.wrap{grid-template-columns:1fr;margin:20px auto;gap:19px}.hero{padding:3px 0}.hero h1{font-size:31px}.hero p{font-size:14px}.steps{display:none}.card{padding:20px}.top{padding:12px 16px}}
+
+/* Módulo administrativo: solo consulta, sin envíos */
+.adminBoard{grid-column:1/-1;background:#fff;border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 12px 40px #0B362112;margin-top:4px;min-width:0}
+.adminHead{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.adminHead h2{margin:0;font-size:23px}
+.adminHead p{margin:5px 0;color:var(--muted);font-size:12px}
+.adminStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:20px 0}
+.adminStat{border:1px solid var(--line);background:#F9FBF8;border-radius:11px;padding:13px}
+.adminStat strong{font-size:24px;display:block}.adminStat small{font-size:11px;color:var(--muted)}
+.adminActions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0}
+.adminActions input{min-width:225px;max-width:420px;flex:1;border:1px solid #C9D9CE;border-radius:10px;padding:10px 12px;color:var(--ink)}
+.adminActions button{width:auto;margin:0;padding:10px 14px}
+.adminMsg{font-size:12px;color:var(--muted);margin-top:12px}
+.adminTableWrap{overflow-x:auto;border:1px solid var(--line);border-radius:11px}
+.adminTable{width:100%;border-collapse:collapse;text-align:left;min-width:780px;font-size:12px}
+.adminTable th{background:#F2F6F2;color:#475E4E;font-size:11px;padding:12px;white-space:nowrap}
+.adminTable td{padding:11px 12px;border-top:1px solid #E8EEE9;vertical-align:top}
+.adminTable td small{color:var(--muted)}.adminTable tbody tr:hover{background:#FAFCFA}
+.adminPill{display:inline-block;border-radius:99px;padding:4px 8px;background:#EEF3ED;color:#28563C;font-size:11px;font-weight:650;white-space:nowrap}
+.adminPill.pending{background:#FFF5E1;color:#895A15}
+.adminHint{font-size:12px;color:#5B6A63;border-left:3px solid var(--gold);padding-left:11px;margin:16px 0 4px}
+@media(max-width:790px){.adminBoard{padding:17px}.adminStats{grid-template-columns:repeat(2,minmax(0,1fr))}.adminActions{align-items:stretch}.adminActions input{width:100%;min-width:0;max-width:none}.adminActions button{width:100%}}
 </style>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -76,10 +98,36 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
     <span id="resultTag" class="tag warn">Identidad verificada</span>
     <div class="account" style="margin-top:14px"><strong id="displayTitle"></strong><small id="displayEmail"></small><div id="rolesList" class="roleList"></div></div>
     <p id="resultText" class="muted" style="margin-top:16px"></p>
+    <button id="adminOpenBtn" type="button" class="cta" hidden>Gestión de usuarios · Presidencia / Vicepresidencia</button>
     <button id="logoutBtn" type="button" class="secondary">Cerrar sesión</button>
   </div>
   <div class="smallDivider"></div>
   <p class="muted">Piloto de autenticación. Nunca introduzcas aquí la contraseña de Gmail, la clave SMTP, la contraseña de PostgreSQL ni una clave de servicio Supabase.</p>
+</section>
+<section id="adminBoard" class="adminBoard" hidden aria-label="Gestión de usuarios">
+  <div class="adminHead">
+    <div><h2>Gestión de usuarios</h2><p>Cambrune 2026 · Panel administrativo de consulta</p></div>
+    <span class="tag">Fase 1 · Solo lectura</span>
+  </div>
+  <div class="adminStats">
+    <div class="adminStat"><strong id="adminTotal">—</strong><small>Participantes</small></div>
+    <div class="adminStat"><strong id="adminLinked">—</strong><small>Cuentas vinculadas</small></div>
+    <div class="adminStat"><strong id="adminPending">—</strong><small>Invitaciones pendientes</small></div>
+    <div class="adminStat"><strong id="adminNoMail">—</strong><small>Sin correo registrado</small></div>
+  </div>
+  <div class="adminActions">
+    <input id="adminSearch" type="search" placeholder="Buscar nombre, comisión o correo" aria-label="Buscar participante">
+    <button class="secondary" type="button" id="adminRefresh">Actualizar lista</button>
+    <button class="secondary" type="button" id="adminClose">Cerrar panel</button>
+  </div>
+  <div id="adminMsg" class="adminMsg" role="status" aria-live="polite">Consulta privada: esperando conexión con el módulo seguro.</div>
+  <div class="adminTableWrap">
+    <table class="adminTable">
+      <thead><tr><th>Participante</th><th>Correo registrado</th><th>Cargos</th><th>Activación</th></tr></thead>
+      <tbody id="adminRows"></tbody>
+    </table>
+  </div>
+  <p class="adminHint">Los registros «pendiente» aún no implican que se haya enviado un correo. El envío de invitaciones está deshabilitado hasta completar las pruebas del servicio seguro.</p>
 </section>
 </main>
 <footer class="footer">Cambrune 2026 · V5.0 piloto · Identidades verificadas por Supabase Auth · Permisos controlados mediante políticas RLS</footer>
@@ -88,7 +136,7 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
 "use strict";
 const byId=id=>document.getElementById(id);
 const panels={login:byId("loginPanel"),otp:byId("otpPanel"),result:byId("resultPanel")};
-const state={client:null,email:"",lastSent:0,resendTimer:null};
+const state={client:null,email:"",lastSent:0,resendTimer:null,adminUsers:[]};
 const PROJECT_URL="https://mirtehjtsgzkrciremnw.supabase.co";
 const PUBLISHABLE_KEY="sb_publishable_uuLlmVXl6_1vMuXF2EO7sQ_a5OOcn1p";
 function show(name,title){Object.keys(panels).forEach(k=>panels[k].hidden=k!==name);byId("cardTitle").textContent=title;clearNotice();}
@@ -119,6 +167,9 @@ async function loadProfile(user){
   byId("displayEmail").textContent=user.email||"Correo autenticado";
   byId("resultText").textContent="Estamos comprobando tu inscripción y los cargos autorizados.";
   byId("rolesList").replaceChildren();
+  byId("adminOpenBtn").hidden=true;
+  byId("adminBoard").hidden=true;
+  state.adminUsers=[];
 
   async function readPerson(){
     return client.from("cambrune_personas")
@@ -196,7 +247,80 @@ async function loadProfile(user){
     byId("rolesList").appendChild(pill);
   });
   byId("resultText").textContent="Cuenta verificada y vinculada correctamente. Esta versión piloto comprueba identidad y roles; los dashboards y permisos documentales se habilitarán en fases posteriores.";
+  byId("adminOpenBtn").hidden=!(roles||[]).some(r=>r.rol==="presidencia"||r.rol==="vicepresidencia");
 }
+
+
+function displayAdminRows() {
+  const query=byId("adminSearch").value.trim().toLowerCase();
+  const body=byId("adminRows");
+  body.replaceChildren();
+  const filtered=state.adminUsers.filter(x=>{
+    const cargoText=(x.cargos||[]).map(c=>c.rol+" "+(c.comision_id||"")).join(" ");
+    return (x.nombre_completo+" "+(x.correo||"")+" "+cargoText).toLowerCase().includes(query);
+  });
+  for(const p of filtered){
+    const tr=document.createElement("tr");
+    const name=document.createElement("td");
+    const label=document.createElement("strong");
+    label.textContent=p.nombre_completo;
+    const small=document.createElement("small");
+    small.textContent=" · "+(p.id_legado||p.tipo);
+    name.append(label,small);
+
+    const correo=document.createElement("td");
+    correo.textContent=p.correo||(p.vinculada?"Cuenta vinculada":"Sin correo registrado");
+
+    const cargos=document.createElement("td");
+    cargos.textContent=(p.cargos||[]).map(c=>c.rol+(c.comision_id?" · Comisión "+c.comision_id:"")).join(", ")||"Sin rol";
+
+    const estado=document.createElement("td");
+    const pill=document.createElement("span");
+    pill.className="adminPill"+(!p.vinculada?" pending":"");
+    pill.textContent=p.vinculada?"Vinculada":(p.estado_invitacion==="pendiente"?"Pendiente de envío":p.estado_invitacion==="vinculada"?"Invitación vinculada":"Sin invitación");
+    estado.append(pill);
+    tr.append(name,correo,cargos,estado);
+    body.append(tr);
+  }
+  if(!filtered.length){
+    const tr=document.createElement("tr"),td=document.createElement("td");
+    td.colSpan=4;td.textContent="No hay participantes que coincidan con la búsqueda.";
+    tr.append(td);body.append(tr);
+  }
+}
+
+async function loadAdminUsers() {
+  if(!state.client||byId("adminOpenBtn").hidden)return;
+  byId("adminMsg").textContent="Consultando el padrón seguro...";
+  byId("adminRefresh").disabled=true;
+  try{
+    const {data,error}=await state.client.functions.invoke("cambrune-admin-users",{body:{action:"list"}});
+    if(error){
+      const status=error.context?.status;
+      throw Error(status===404?"La función segura todavía no se ha desplegado en Supabase.":String(error.message||"Error de consulta"));
+    }
+    if(!data||!Array.isArray(data.participantes))throw Error(data?.error||"Respuesta administrativa no válida");
+    state.adminUsers=data.participantes;
+    byId("adminTotal").textContent=String(data.resumen?.total??"—");
+    byId("adminLinked").textContent=String(data.resumen?.cuentas_vinculadas??"—");
+    byId("adminPending").textContent=String(data.resumen?.invitaciones_pendientes??"—");
+    byId("adminNoMail").textContent=String(data.resumen?.sin_correo??"—");
+    byId("adminMsg").textContent="Padrón consultado correctamente. Esta versión no envía correos.";
+    displayAdminRows();
+  }catch(e){
+    byId("adminMsg").textContent="No se pudo consultar el panel: "+String(e.message||e)+". Comprueba el despliegue y los permisos del servidor.";
+    state.adminUsers=[];
+    byId("adminRows").replaceChildren();
+  }finally{byId("adminRefresh").disabled=false}
+}
+byId("adminOpenBtn").addEventListener("click",()=>{
+  byId("adminBoard").hidden=false;
+  byId("adminBoard").scrollIntoView({behavior:"smooth",block:"start"});
+  loadAdminUsers();
+});
+byId("adminRefresh").addEventListener("click",loadAdminUsers);
+byId("adminSearch").addEventListener("input",displayAdminRows);
+byId("adminClose").addEventListener("click",()=>{byId("adminBoard").hidden=true;});
 
 byId("emailForm").addEventListener("submit",async e=>{e.preventDefault();if(!state.client)return;
   const email=byId("email").value.trim().toLowerCase();if(!email)return;
@@ -243,7 +367,7 @@ byId("resendBtn").addEventListener("click",async()=>{
   finally{busy("resendBtn",false)}
 });
 byId("changeEmail").addEventListener("click",()=>{byId("otp").value="";show("login","Acceso personal")});
-byId("logoutBtn").addEventListener("click",async()=>{if(state.client)await state.client.auth.signOut();state.email="";show("login","Acceso personal");notice("Sesión cerrada correctamente.","success")});
+byId("logoutBtn").addEventListener("click",async()=>{if(state.client)await state.client.auth.signOut();state.email="";state.adminUsers=[];byId("adminBoard").hidden=true;byId("adminOpenBtn").hidden=true;show("login","Acceso personal");notice("Sesión cerrada correctamente.","success")});
 window.addEventListener("DOMContentLoaded",restore);
 })();
 </script>
