@@ -2,7 +2,7 @@
 // Desplegar como Edge Function "cambrune-admin-users" en Supabase.
 // No crea cuentas Auth, no envía correos y no modifica ninguna tabla.
 // Verificación JWT activada y comprobación de Presidencia/Vicepresidencia EN SERVIDOR.
-import { withSupabase } from "npm:@supabase/server@1";
+import { withSupabase } from "jsr:@supabase/server@^1";
 
 export default {
   fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
