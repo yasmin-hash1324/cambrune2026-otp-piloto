@@ -50,15 +50,8 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
 <div class="bullet">Esta pantalla es una prueba real de autenticación. Los dashboards y trámites de la V4.4 se conectarán después de validar identidad y permisos.</div>
 </section>
 <section class="card" aria-label="Acceso a Cambrune">
-  <div class="cardHead"><h2 id="cardTitle">Configuración inicial</h2><button type="button" id="settingsBtn" class="miniLink" hidden>Configuración</button></div>
+  <div class="cardHead"><h2 id="cardTitle">Acceso personal</h2></div>
   <div id="status" class="status" role="status" aria-live="polite"></div>
-  <div id="configPanel" class="panel">
-    <p class="muted">Uso exclusivo del equipo técnico. Introduce la URL y la <strong>clave pública</strong> de tu proyecto Supabase. No introduzcas claves secretas ni de administración.</p>
-    <div class="field"><label for="projectUrl">Project URL</label><input id="projectUrl" type="url" autocomplete="off" placeholder="https://xxxxxxxx.supabase.co"></div>
-    <div class="field"><label for="publicKey">Publishable key (o clave legacy anon)</label><input id="publicKey" type="text" spellcheck="false" autocomplete="off" placeholder="sb_publishable_..."></div>
-    <button id="saveConfig" class="cta" type="button">Guardar configuración pública</button>
-    <p class="muted">Esta configuración queda guardada únicamente en este navegador. Supabase controla los permisos reales mediante RLS.</p>
-  </div>
   <div id="loginPanel" class="panel" hidden>
     <span class="tag">Verificación por correo</span>
     <p class="muted">Introduce la dirección que ya tiene una cuenta existente en Supabase Auth.</p>
@@ -94,36 +87,27 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
 (function(){
 "use strict";
 const byId=id=>document.getElementById(id);
-const panels={config:byId("configPanel"),login:byId("loginPanel"),otp:byId("otpPanel"),result:byId("resultPanel")};
+const panels={login:byId("loginPanel"),otp:byId("otpPanel"),result:byId("resultPanel")};
 const state={client:null,email:"",lastSent:0,resendTimer:null};
-const CONFIG_KEY="cambrune_v50_public_connection";
-function show(name,title){Object.keys(panels).forEach(k=>panels[k].hidden=k!==name);byId("cardTitle").textContent=title;byId("settingsBtn").hidden=name==="config";clearNotice();}
+const PROJECT_URL="https://mirtehjtsgzkrciremnw.supabase.co";
+const PUBLISHABLE_KEY="sb_publishable_uuLlmVXl6_1vMuXF2EO7sQ_a5OOcn1p";
+function show(name,title){Object.keys(panels).forEach(k=>panels[k].hidden=k!==name);byId("cardTitle").textContent=title;clearNotice();}
 function notice(message,kind){const e=byId("status");e.textContent=message;e.className="status show "+(kind||"info");}
 function clearNotice(){const e=byId("status");e.textContent="";e.className="status";}
 function busy(id,value){byId(id).disabled=!!value;}
 function maskEmail(v){const parts=v.split("@");if(parts.length!==2)return "tu correo";return (parts[0].slice(0,2)||"*")+"***@"+parts[1];}
-function safeConfig(url,key){
-  try{
-    const u=new URL(url.trim());
-    if(u.protocol!=="https:"||!(/^[a-z0-9-]+\.supabase\.co$/i).test(u.hostname)||u.username||u.password||u.pathname!=="/")return false;
-    const k=key.trim();
-    if(k.startsWith("sb_publishable_"))return true;
-    if(k.split(".").length===3){
-      const payload=k.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
-      const decoded=JSON.parse(atob(payload.padEnd(Math.ceil(payload.length/4)*4,"=")));
-      return decoded.role==="anon";
-    }
-  }catch(e){}
-  return false;
-}
-function setup(url,key){
-  if(!window.supabase || typeof window.supabase.createClient!=="function")throw Error("No cargó la biblioteca de Supabase. Comprueba tu conexión a Internet.");
-  state.client=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+function setup(){
+  if(!window.supabase||typeof window.supabase.createClient!=="function")throw Error("No se cargó la biblioteca de Supabase. Comprueba tu conexión.");
+  state.client=window.supabase.createClient(PROJECT_URL,PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 }
 async function restore(){
-  const saved=(()=>{try{return JSON.parse(localStorage.getItem(CONFIG_KEY)||"null")}catch(e){return null}})();
-  if(!saved||!safeConfig(saved.url,saved.key)){show("config","Configuración inicial");return}
-  try{setup(saved.url,saved.key);byId("projectUrl").value=saved.url;byId("publicKey").value=saved.key;show("login","Acceso personal");const x=await state.client.auth.getUser();if(x.error)throw x.error;if(x.data&&x.data.user)await loadProfile(x.data.user);}catch(e){show("login","Acceso personal");notice("La sesión no se pudo comprobar. Puedes iniciar sesión de nuevo.","info")}
+  show("login","Acceso personal");
+  try{
+    setup();
+    const {data,error}=await state.client.auth.getUser();
+    if(data&&data.user)await loadProfile(data.user);
+    else if(error && !/auth session missing/i.test(error.message||""))notice("Puedes solicitar un nuevo código para iniciar sesión.","info");
+  }catch(err){notice("No se pudo conectar con Supabase. Actualiza la página o revisa tu conexión. "+String(err.message||err),"error")}
 }
 async function loadProfile(user){
   const client=state.client;
@@ -142,17 +126,6 @@ async function loadProfile(user){
   (roles||[]).forEach(r=>{const pill=document.createElement("span");pill.textContent=r.rol+(r.comision_id?" · Comisión "+r.comision_id:"");byId("rolesList").appendChild(pill)});
   byId("resultText").textContent="Cuenta verificada y vinculada correctamente. Esta versión piloto comprueba identidad y roles; la navegación hacia los dashboards de V5.0 se habilitará en la siguiente fase.";
 }
-byId("saveConfig").addEventListener("click",async()=>{
-  const url=byId("projectUrl").value.trim().replace(/\/$/,"")+"/",key=byId("publicKey").value.trim();
-  if(!safeConfig(url,key)){notice("Utiliza una Project URL de Supabase y solo una clave publishable o legacy anon. No se admiten service_role ni secret.","error");return}
-  try{
-    if(state.client)await state.client.auth.signOut();
-    setup(url,key);
-    try{localStorage.setItem(CONFIG_KEY,JSON.stringify({url,key}))}catch(e){}
-    show("login","Acceso personal");
-    notice("Conexión pública configurada. Ya puedes solicitar un código de acceso.","success")
-  }catch(e){notice("No se pudo inicializar Supabase: "+e.message,"error")}
-});
 byId("emailForm").addEventListener("submit",async e=>{e.preventDefault();if(!state.client)return;
   const email=byId("email").value.trim().toLowerCase();if(!email)return;
   busy("sendBtn",true);
@@ -199,7 +172,6 @@ byId("resendBtn").addEventListener("click",async()=>{
 });
 byId("changeEmail").addEventListener("click",()=>{byId("otp").value="";show("login","Acceso personal")});
 byId("logoutBtn").addEventListener("click",async()=>{if(state.client)await state.client.auth.signOut();state.email="";show("login","Acceso personal");notice("Sesión cerrada correctamente.","success")});
-byId("settingsBtn").addEventListener("click",async()=>{if(state.client){const x=await state.client.auth.getSession();if(x.data.session)await state.client.auth.signOut()}show("config","Configuración pública")});
 window.addEventListener("DOMContentLoaded",restore);
 })();
 </script>
