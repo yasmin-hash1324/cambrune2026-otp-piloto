@@ -51,6 +51,12 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
 .adminPill.pending{background:#FFF5E1;color:#895A15}
 .adminHint{font-size:12px;color:#5B6A63;border-left:3px solid var(--gold);padding-left:11px;margin:16px 0 4px}
 @media(max-width:790px){.adminBoard{padding:17px}.adminStats{grid-template-columns:repeat(2,minmax(0,1fr))}.adminActions{align-items:stretch}.adminActions input{width:100%;min-width:0;max-width:none}.adminActions button{width:100%}}
+.adminPreview{margin:16px 0;padding:17px;background:#FAFCF9;border:1px solid #CADCCE;border-radius:13px}
+.adminPreview h3{font-size:17px;margin:0;color:#173B29}
+.adminPreview p{font-size:13px;margin:12px 0 0;overflow-wrap:anywhere}
+.adminPreview .adminHint{margin-top:12px}
+.adminCheckBtn{display:inline-block;width:auto !important;margin:0 !important;padding:7px 11px !important;font-size:12px !important;white-space:nowrap}
+.adminTable td:last-child{text-align:center}
 </style>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -123,13 +129,23 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
     <button class="secondary" type="button" id="adminClose">Cerrar panel</button>
   </div>
   <div id="adminMsg" class="adminMsg" role="status" aria-live="polite">Consulta privada: esperando conexión con el módulo seguro.</div>
+  <section id="adminPreview" class="adminPreview" hidden aria-live="polite">
+    <div class="adminHead"><h3>Vista previa de invitación</h3><span class="adminPill">SIN ENVÍO</span></div>
+    <p id="adminPreviewStatus" class="muted">Comprobando invitación con el servidor...</p>
+    <div id="adminPreviewDetails" hidden>
+      <p><strong>Participante:</strong> <span id="adminPreviewName"></span></p>
+      <p><strong>Destinatario autorizado:</strong> <span id="adminPreviewEmail"></span></p>
+      <p><strong>Estado de envío:</strong> <span id="adminPreviewState"></span></p>
+      <p class="adminHint">Esta comprobación solo valida destinatario y permisos. No crea cuentas ni envía correos. Antes del primer envío real solicitaremos autorización expresa.</p>
+    </div>
+  </section>
   <div class="adminTableWrap">
     <table class="adminTable">
-      <thead><tr><th>Participante</th><th>Correo registrado</th><th>Cargos</th><th>Activación</th></tr></thead>
+      <thead><tr><th>Participante</th><th>Correo registrado</th><th>Cargos</th><th>Activación</th><th>Comprobar</th></tr></thead>
       <tbody id="adminRows"></tbody>
     </table>
   </div>
-  <p class="adminHint">Los registros «pendiente» aún no implican que se haya enviado un correo. El envío de invitaciones está deshabilitado hasta completar las pruebas del servicio seguro.</p>
+  <p class="adminHint">El botón «Vista previa» no envía ningún correo. Los registros «pendiente» no implican envío realizado; los envíos permanecen deshabilitados en esta interfaz.</p>
 </section>
 </main>
 <footer class="footer">Cambrune 2026 · V5.0 piloto · Identidades verificadas por Supabase Auth · Permisos controlados mediante políticas RLS</footer>
@@ -173,6 +189,7 @@ async function loadProfile(user){
   byId("securityTestBtn").hidden=true;
   byId("securityTestResult").hidden=true;
   byId("adminBoard").hidden=true;
+  resetAdminPreview();
   state.adminUsers=[];
 
   async function readPerson(){
@@ -256,6 +273,41 @@ async function loadProfile(user){
 }
 
 
+function resetAdminPreview(){
+  byId("adminPreview").hidden=true;
+  byId("adminPreviewDetails").hidden=true;
+  byId("adminPreviewStatus").textContent="";
+  byId("adminPreviewName").textContent="";
+  byId("adminPreviewEmail").textContent="";
+  byId("adminPreviewState").textContent="";
+}
+async function previewAdminInvitation(person,button){
+  if(!state.client||byId("adminOpenBtn").hidden||!person.invitacion_id)return;
+  const pane=byId("adminPreview");
+  pane.hidden=false;
+  byId("adminPreviewDetails").hidden=true;
+  byId("adminPreviewStatus").textContent="Comprobando la invitación y la autorización desde Supabase...";
+  pane.scrollIntoView({behavior:"smooth",block:"nearest"});
+  button.disabled=true;
+  try{
+    const {data,error}=await state.client.functions.invoke("cambrune-send-invite",{
+      body:{action:"preview",invitacion_id:person.invitacion_id}
+    });
+    if(error)throw Error(error.context?.status
+      ?"La verificación no se completó (HTTP "+error.context.status+")."
+      :"No se pudo consultar la función de invitación.");
+    if(!data||data.listo!==true||data.modo!=="solo_vista_previa")
+      throw Error(data?.error||"No se obtuvo una vista previa válida.");
+    byId("adminPreviewName").textContent=data.participante||"—";
+    byId("adminPreviewEmail").textContent=data.destinatario||"—";
+    byId("adminPreviewState").textContent=data.estado_envio||"—";
+    byId("adminPreviewStatus").textContent="Vista previa validada por el servidor. Ningún correo enviado.";
+    byId("adminPreviewDetails").hidden=false;
+  }catch(e){
+    byId("adminPreviewStatus").textContent="No se pudo validar esta invitación: "+String(e.message||e);
+    byId("adminPreviewDetails").hidden=true;
+  }finally{button.disabled=false}
+}
 function displayAdminRows() {
   const query=byId("adminSearch").value.trim().toLowerCase();
   const body=byId("adminRows");
@@ -272,30 +324,39 @@ function displayAdminRows() {
     const small=document.createElement("small");
     small.textContent=" · "+(p.id_legado||p.tipo);
     name.append(label,small);
-
     const correo=document.createElement("td");
     correo.textContent=p.correo||(p.vinculada?"Cuenta vinculada":"Sin correo registrado");
-
     const cargos=document.createElement("td");
     cargos.textContent=(p.cargos||[]).map(c=>c.rol+(c.comision_id?" · Comisión "+c.comision_id:"")).join(", ")||"Sin rol";
-
     const estado=document.createElement("td");
     const pill=document.createElement("span");
     pill.className="adminPill"+(!p.vinculada?" pending":"");
     pill.textContent=p.vinculada?"Vinculada":(p.estado_invitacion==="pendiente"?"Pendiente de envío":p.estado_invitacion==="vinculada"?"Invitación vinculada":"Sin invitación");
     estado.append(pill);
-    tr.append(name,correo,cargos,estado);
+    const action=document.createElement("td");
+    if(!p.vinculada && p.estado_invitacion==="pendiente" && p.invitacion_id){
+      const btn=document.createElement("button");
+      btn.type="button";
+      btn.className="secondary adminCheckBtn";
+      btn.textContent="Vista previa";
+      btn.addEventListener("click",()=>previewAdminInvitation(p,btn));
+      action.append(btn);
+    } else {
+      action.textContent="—";
+    }
+    tr.append(name,correo,cargos,estado,action);
     body.append(tr);
   }
   if(!filtered.length){
     const tr=document.createElement("tr"),td=document.createElement("td");
-    td.colSpan=4;td.textContent="No hay participantes que coincidan con la búsqueda.";
+    td.colSpan=5;td.textContent="No hay participantes que coincidan con la búsqueda.";
     tr.append(td);body.append(tr);
   }
 }
 
 async function loadAdminUsers() {
   if(!state.client||byId("adminOpenBtn").hidden)return;
+  resetAdminPreview();
   byId("adminMsg").textContent="Consultando el padrón seguro...";
   byId("adminRefresh").disabled=true;
   try{
@@ -354,7 +415,7 @@ byId("adminOpenBtn").addEventListener("click",()=>{
 });
 byId("adminRefresh").addEventListener("click",loadAdminUsers);
 byId("adminSearch").addEventListener("input",displayAdminRows);
-byId("adminClose").addEventListener("click",()=>{byId("adminBoard").hidden=true;});
+byId("adminClose").addEventListener("click",()=>{byId("adminBoard").hidden=true;resetAdminPreview();});
 
 byId("emailForm").addEventListener("submit",async e=>{e.preventDefault();if(!state.client)return;
   const email=byId("email").value.trim().toLowerCase();if(!email)return;
@@ -401,7 +462,7 @@ byId("resendBtn").addEventListener("click",async()=>{
   finally{busy("resendBtn",false)}
 });
 byId("changeEmail").addEventListener("click",()=>{byId("otp").value="";show("login","Acceso personal")});
-byId("logoutBtn").addEventListener("click",async()=>{if(state.client)await state.client.auth.signOut();state.email="";state.adminUsers=[];byId("adminBoard").hidden=true;byId("adminOpenBtn").hidden=true;byId("securityTestBtn").hidden=true;byId("securityTestResult").hidden=true;show("login","Acceso personal");notice("Sesión cerrada correctamente.","success")});
+byId("logoutBtn").addEventListener("click",async()=>{if(state.client)await state.client.auth.signOut();state.email="";state.adminUsers=[];resetAdminPreview();byId("adminBoard").hidden=true;byId("adminOpenBtn").hidden=true;byId("securityTestBtn").hidden=true;byId("securityTestResult").hidden=true;show("login","Acceso personal");notice("Sesión cerrada correctamente.","success")});
 window.addEventListener("DOMContentLoaded",restore);
 })();
 </script>
