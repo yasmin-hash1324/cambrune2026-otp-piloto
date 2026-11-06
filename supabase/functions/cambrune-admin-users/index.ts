@@ -62,7 +62,7 @@ export default {
         .select("id, id_legado, nombre_completo, tipo, activo, usuario_auth")
         .order("nombre_completo"),
       admin.from("cambrune_invitaciones")
-        .select("id, persona_id, correo, estado, creado_en, vinculado_en"),
+        .select("id, persona_id, correo, estado, envio_estado, enviado_en, creado_en, vinculado_en"),
       admin.from("cambrune_roles")
         .select("persona_id, rol, comision_id"),
     ]);
@@ -92,18 +92,23 @@ export default {
         correo: invitacion?.correo ?? null,
         invitacion_id: invitacion?.id ?? null,
         estado_invitacion: invitacion?.estado ?? null,
+        estado_envio: invitacion?.envio_estado ?? null,
+        enviado_en: invitacion?.enviado_en ?? null,
         cargos: cargosPersona,
       };
     });
 
     return Response.json({
-      version: "piloto-lectura-v1",
+      version: "piloto-lectura-v2",
       alcance: "presidencia_vicepresidencia",
       participantes,
       resumen: {
         total: participantes.length,
         cuentas_vinculadas: participantes.filter((p) => p.vinculada).length,
         invitaciones_pendientes: invitaciones.filter((i) => i.estado === "pendiente").length,
+        correos_sin_enviar: invitaciones.filter((i) => i.envio_estado === "sin_enviar").length,
+        correos_enviados: invitaciones.filter((i) => i.envio_estado === "enviado").length,
+        correos_revisar: invitaciones.filter((i) => i.envio_estado === "revisar").length,
         sin_correo: participantes.filter((p) => !p.correo && !p.vinculada).length,
       },
       envios_habilitados: false,
