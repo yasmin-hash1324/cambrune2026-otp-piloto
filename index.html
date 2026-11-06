@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Cambrune 2026 | Acceso seguro V5.0 - Piloto</title>
+<style>
+:root{--green:#175030;--wine:#981C1E;--gold:#D1A044;--cream:#F5E5C1;--ink:#1C382D;--muted:#61736B;--bg:#F4F7F2;--line:#DBE4DD}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);line-height:1.45}
+button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);border-bottom:4px solid var(--gold);color:white;padding:15px max(20px,calc((100vw - 1220px)/2));display:flex;justify-content:space-between;gap:12px;align-items:center}
+.brand{display:flex;gap:10px;align-items:center}.brandLogo{width:43px;height:43px;border:2px solid var(--gold);border-radius:50%;display:grid;place-items:center;background:#fff;color:var(--green);font-weight:850;font-size:20px}.brand strong{display:block;font-size:15px}.brand small{color:#E3EAD8;font-size:11px}
+.topBadge{font-size:11px;border:1px solid #A4B9AA;background:#ffffff12;border-radius:30px;padding:6px 9px}
+.wrap{max-width:1150px;margin:40px auto;padding:0 20px;display:grid;grid-template-columns:1fr minmax(350px,440px);gap:30px;align-items:start}
+.hero{padding:20px 12px 0 0}.eyebrow{text-transform:uppercase;font-size:11px;letter-spacing:.12em;color:#6A8A6D;font-weight:800}.hero h1{font-size:clamp(31px,4vw,51px);line-height:1.12;letter-spacing:-.045em;margin:11px 0 16px;max-width:580px}.hero p{font-size:16px;color:var(--muted);max-width:510px}
+.steps{display:grid;gap:12px;margin-top:26px}.step{display:flex;gap:12px;align-items:flex-start}.num{height:28px;width:28px;flex:none;border-radius:9px;background:#E6EFE5;display:grid;place-items:center;color:var(--green);font-weight:800;font-size:13px}
+.step strong{display:block;font-size:13px}.step span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.card{background:#fff;border:1px solid var(--line);border-radius:19px;box-shadow:0 12px 40px #0B362115;padding:26px}.cardHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:18px}.cardHead h2{font-size:21px;letter-spacing:-.02em;margin:0}.miniLink{border:0;background:transparent;color:#175030;font-weight:750;font-size:12px;text-decoration:underline}
+.panel[hidden]{display:none!important}.field{display:grid;gap:7px;margin:15px 0}.field label{font-size:12px;font-weight:700}.field input{width:100%;border:1px solid #C9D9CE;border-radius:10px;padding:12px 13px;outline-offset:2px;background:white;color:var(--ink)}.field input:focus{border-color:var(--green);outline:2px solid #C6DCC6}
+.cta{border:0;background:var(--green);color:white;width:100%;font-weight:750;border-radius:10px;padding:13px 15px;margin-top:10px}.cta:disabled{opacity:.55;cursor:wait}
+.secondary{width:100%;border:1px solid #C9D8CC;background:#fff;color:var(--green);border-radius:10px;padding:11px;font-weight:750;margin-top:9px}
+.muted{color:var(--muted);font-size:12px}.status{border-radius:11px;padding:13px;margin:15px 0;font-size:12px;display:none}.status.show{display:block}.status.info{background:#EDF3F6;color:#22516A;border:1px solid #BDD6E4}.status.error{background:#FFF0EF;color:#91322E;border:1px solid #EAC3BE}.status.success{background:#ECF8EF;color:#1A6438;border:1px solid #B8DBBF}
+.tag{display:inline-block;border-radius:30px;padding:5px 10px;font-size:11px;font-weight:750;color:#1B6844;border:1px solid #BFDCCC;background:#EAF4ED}
+.tag.warn{color:#8B5D19;border-color:#E8D5AD;background:#FFF6DF}
+.code{letter-spacing:.23em;text-align:center;font-size:25px!important;font-weight:800}
+.smallDivider{height:1px;background:var(--line);margin:17px 0}.account{border:1px solid var(--line);border-radius:12px;padding:14px;background:#FAFCF8;overflow-wrap:anywhere}
+.account strong{display:block;font-size:14px}.account small{display:block;color:var(--muted);font-size:11px;margin:4px 0}
+.roleList{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.roleList span{background:#E4EEE5;color:#225739;border-radius:7px;padding:5px 7px;font-size:11px}
+.footer{max-width:1150px;margin:36px auto 20px;padding:16px 20px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
+.bullet{border-left:3px solid var(--gold);padding-left:12px;margin:19px 0;font-size:12px;color:#52695A}
+@media(max-width:790px){.wrap{grid-template-columns:1fr;margin:20px auto;gap:19px}.hero{padding:3px 0}.hero h1{font-size:31px}.hero p{font-size:14px}.steps{display:none}.card{padding:20px}.top{padding:12px 16px}}
+</style>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><div class="brandLogo">C</div><div><strong>CAMBRUNE 2026</strong><small>Un pequeño aporte, una gran sonrisa</small></div></div>
+  <span class="topBadge">Acceso seguro · piloto V5.0</span>
+</header>
+<main class="wrap">
+<section class="hero">
+<span class="eyebrow">Jornada Médica Estudiantil Navideña</span>
+<h1>Un proyecto compartido. Un acceso personal.</h1>
+<p>Utiliza tu correo verificado para consultar las funciones que te corresponden. Los cargos y las comisiones se asignan desde el padrón autorizado, nunca desde este formulario.</p>
+<div class="steps">
+  <div class="step"><div class="num">1</div><div><strong>Solicita tu código</strong><span>Se enviará al correo de una cuenta existente en Supabase Auth.</span></div></div>
+  <div class="step"><div class="num">2</div><div><strong>Verifica tu identidad</strong><span>Introduce el código personal enviado por Brevo.</span></div></div>
+  <div class="step"><div class="num">3</div><div><strong>Accede según tus permisos</strong><span>La base de datos determina si estás habilitado y qué cargos tienes.</span></div></div>
+</div>
+<div class="bullet">Esta pantalla es una prueba real de autenticación. Los dashboards y trámites de la V4.4 se conectarán después de validar identidad y permisos.</div>
+</section>
+<section class="card" aria-label="Acceso a Cambrune">
+  <div class="cardHead"><h2 id="cardTitle">Configuración inicial</h2><button type="button" id="settingsBtn" class="miniLink" hidden>Configuración</button></div>
+  <div id="status" class="status" role="status" aria-live="polite"></div>
+  <div id="configPanel" class="panel">
+    <p class="muted">Uso exclusivo del equipo técnico. Introduce la URL y la <strong>clave pública</strong> de tu proyecto Supabase. No introduzcas claves secretas ni de administración.</p>
+    <div class="field"><label for="projectUrl">Project URL</label><input id="projectUrl" type="url" autocomplete="off" placeholder="https://xxxxxxxx.supabase.co"></div>
+    <div class="field"><label for="publicKey">Publishable key (o clave legacy anon)</label><input id="publicKey" type="text" spellcheck="false" autocomplete="off" placeholder="sb_publishable_..."></div>
+    <button id="saveConfig" class="cta" type="button">Guardar configuración pública</button>
+    <p class="muted">Esta configuración queda guardada únicamente en este navegador. Supabase controla los permisos reales mediante RLS.</p>
+  </div>
+  <div id="loginPanel" class="panel" hidden>
+    <span class="tag">Verificación por correo</span>
+    <p class="muted">Introduce la dirección que ya tiene una cuenta existente en Supabase Auth.</p>
+    <form id="emailForm">
+      <div class="field"><label for="email">Correo electrónico</label><input id="email" type="email" required autocomplete="email" inputmode="email" placeholder="correo@ejemplo.com"></div>
+      <button id="sendBtn" type="submit" class="cta">Enviar código de acceso</button>
+    </form>
+    <p class="muted">Si no recibes el mensaje, revisa también Spam. Por seguridad, no se crearán cuentas nuevas desde este formulario.</p>
+  </div>
+  <div id="otpPanel" class="panel" hidden>
+    <span class="tag">Código enviado</span>
+    <p class="muted">Si existe una cuenta habilitada para iniciar sesión, recibirás un código en <strong id="maskedEmail"></strong>. Revisa Spam.</p>
+    <form id="otpForm">
+      <div class="field"><label for="otp">Código temporal</label><input id="otp" class="code" type="text" inputmode="numeric" pattern="[0-9]{4,10}" minlength="4" maxlength="10" autocomplete="one-time-code" required placeholder="••••••"></div>
+      <button id="verifyBtn" type="submit" class="cta">Verificar código</button>
+    </form>
+    <button id="resendBtn" type="button" class="secondary">Reenviar código</button>
+    <button id="changeEmail" type="button" class="secondary">Cambiar correo</button>
+    <p class="muted">Los códigos caducan y solo pueden utilizarse una vez. Nunca los compartas.</p>
+  </div>
+  <div id="resultPanel" class="panel" hidden>
+    <span id="resultTag" class="tag warn">Identidad verificada</span>
+    <div class="account" style="margin-top:14px"><strong id="displayTitle"></strong><small id="displayEmail"></small><div id="rolesList" class="roleList"></div></div>
+    <p id="resultText" class="muted" style="margin-top:16px"></p>
+    <button id="logoutBtn" type="button" class="secondary">Cerrar sesión</button>
+  </div>
+  <div class="smallDivider"></div>
+  <p class="muted">Piloto de autenticación. Nunca introduzcas aquí la contraseña de Gmail, la clave SMTP, la contraseña de PostgreSQL ni una clave de servicio Supabase.</p>
+</section>
+</main>
+<footer class="footer">Cambrune 2026 · V5.0 piloto · Identidades verificadas por Supabase Auth · Permisos controlados mediante políticas RLS</footer>
+<script>
+(function(){
+"use strict";
+const byId=id=>document.getElementById(id);
+const panels={config:byId("configPanel"),login:byId("loginPanel"),otp:byId("otpPanel"),result:byId("resultPanel")};
+const state={client:null,email:"",lastSent:0,resendTimer:null};
+const CONFIG_KEY="cambrune_v50_public_connection";
+function show(name,title){Object.keys(panels).forEach(k=>panels[k].hidden=k!==name);byId("cardTitle").textContent=title;byId("settingsBtn").hidden=name==="config";clearNotice();}
+function notice(message,kind){const e=byId("status");e.textContent=message;e.className="status show "+(kind||"info");}
+function clearNotice(){const e=byId("status");e.textContent="";e.className="status";}
+function busy(id,value){byId(id).disabled=!!value;}
+function maskEmail(v){const parts=v.split("@");if(parts.length!==2)return "tu correo";return (parts[0].slice(0,2)||"*")+"***@"+parts[1];}
+function safeConfig(url,key){
+  try{
+    const u=new URL(url.trim());
+    if(u.protocol!=="https:"||!(/^[a-z0-9-]+\.supabase\.co$/i).test(u.hostname)||u.username||u.password||u.pathname!=="/")return false;
+    const k=key.trim();
+    if(k.startsWith("sb_publishable_"))return true;
+    if(k.split(".").length===3){
+      const payload=k.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
+      const decoded=JSON.parse(atob(payload.padEnd(Math.ceil(payload.length/4)*4,"=")));
+      return decoded.role==="anon";
+    }
+  }catch(e){}
+  return false;
+}
+function setup(url,key){
+  if(!window.supabase || typeof window.supabase.createClient!=="function")throw Error("No cargó la biblioteca de Supabase. Comprueba tu conexión a Internet.");
+  state.client=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+}
+async function restore(){
+  const saved=(()=>{try{return JSON.parse(localStorage.getItem(CONFIG_KEY)||"null")}catch(e){return null}})();
+  if(!saved||!safeConfig(saved.url,saved.key)){show("config","Configuración inicial");return}
+  try{setup(saved.url,saved.key);byId("projectUrl").value=saved.url;byId("publicKey").value=saved.key;show("login","Acceso personal");const x=await state.client.auth.getUser();if(x.error)throw x.error;if(x.data&&x.data.user)await loadProfile(x.data.user);}catch(e){show("login","Acceso personal");notice("La sesión no se pudo comprobar. Puedes iniciar sesión de nuevo.","info")}
+}
+async function loadProfile(user){
+  const client=state.client;
+  if(!user||!client)return;
+  show("result","Estado de tu acceso");
+  byId("displayEmail").textContent=user.email||"Correo autenticado";
+  byId("rolesList").replaceChildren();
+  const {data:p,error:err}=await client.from("cambrune_personas").select("id,nombre_completo,tipo").eq("usuario_auth",user.id).maybeSingle();
+  if(err){byId("displayTitle").textContent="Identidad comprobada";byId("resultText").textContent="No se pudo consultar tu perfil de Cambrune. Comprueba las políticas RLS y la conectividad.";notice("Problema al consultar el padrón; no se ha concedido acceso.","error");return}
+  if(!p){byId("resultTag").textContent="Vinculación pendiente";byId("displayTitle").textContent="Correo verificado";byId("resultText").textContent="Supabase confirmó tu identidad, pero tu cuenta todavía no está vinculada con el padrón autorizado de Cambrune. Esta situación es normal durante la primera prueba. Presidencia tendrá que habilitarte mediante el procedimiento administrativo.";return}
+  const {data:roles,error:roleError}=await client.from("cambrune_roles").select("rol,comision_id").eq("persona_id",p.id);
+  if(roleError){byId("displayTitle").textContent=p.nombre_completo;byId("resultText").textContent="Perfil vinculado, pero los roles no pudieron verificarse. Se mantiene el acceso restringido.";notice("No fue posible verificar los cargos.","error");return}
+  byId("resultTag").textContent="Padrón confirmado";
+  byId("resultTag").className="tag";
+  byId("displayTitle").textContent=p.nombre_completo;
+  (roles||[]).forEach(r=>{const pill=document.createElement("span");pill.textContent=r.rol+(r.comision_id?" · Comisión "+r.comision_id:"");byId("rolesList").appendChild(pill)});
+  byId("resultText").textContent="Cuenta verificada y vinculada correctamente. Esta versión piloto comprueba identidad y roles; la navegación hacia los dashboards de V5.0 se habilitará en la siguiente fase.";
+}
+byId("saveConfig").addEventListener("click",async()=>{
+  const url=byId("projectUrl").value.trim().replace(/\/$/,"")+"/",key=byId("publicKey").value.trim();
+  if(!safeConfig(url,key)){notice("Utiliza una Project URL de Supabase y solo una clave publishable o legacy anon. No se admiten service_role ni secret.","error");return}
+  try{
+    if(state.client)await state.client.auth.signOut();
+    setup(url,key);
+    try{localStorage.setItem(CONFIG_KEY,JSON.stringify({url,key}))}catch(e){}
+    show("login","Acceso personal");
+    notice("Conexión pública configurada. Ya puedes solicitar un código de acceso.","success")
+  }catch(e){notice("No se pudo inicializar Supabase: "+e.message,"error")}
+});
+byId("emailForm").addEventListener("submit",async e=>{e.preventDefault();if(!state.client)return;
+  const email=byId("email").value.trim().toLowerCase();if(!email)return;
+  busy("sendBtn",true);
+  try{
+    const {error}=await state.client.auth.signInWithOtp({email,options:{shouldCreateUser:false}});
+    if(error)throw error;
+    state.email=email;state.lastSent=Date.now();byId("maskedEmail").textContent=maskEmail(email);
+    show("otp","Introduce tu código");
+    notice("Solicitud procesada. Si la cuenta existe, comprueba tu bandeja y Spam.","success");
+    countdown();
+  }catch(err){notice("No se pudo solicitar el código. Comprueba la configuración, el estado de la cuenta y el límite de envíos. Detalle: "+String(err.message||err),"error")}
+  finally{busy("sendBtn",false)}
+});
+byId("otpForm").addEventListener("submit",async e=>{e.preventDefault();const token=byId("otp").value.trim();
+  if(!state.client||!state.email||!/^\d{4,10}$/.test(token)){notice("Introduce el código numérico recibido por correo.","error");return}
+  busy("verifyBtn",true);
+  try{
+    const {data,error}=await state.client.auth.verifyOtp({email:state.email,token,type:"email"});
+    if(error)throw error;
+    byId("otp").value="";
+    const user=data&&data.user?data.user:(await state.client.auth.getUser()).data.user;
+    if(!user)throw Error("No se encontró una sesión válida.");
+    await loadProfile(user);
+  }catch(err){notice("No se pudo verificar el código. Comprueba que sea el más reciente y que no haya caducado. Detalle: "+String(err.message||err),"error")}
+  finally{busy("verifyBtn",false)}
+});
+function countdown(){
+  if(state.resendTimer)clearInterval(state.resendTimer);
+  const update=()=>{
+    if(panels.otp.hidden){if(state.resendTimer)clearInterval(state.resendTimer);return}
+    const remain=Math.max(0,60-Math.floor((Date.now()-state.lastSent)/1000));
+    byId("resendBtn").disabled=remain>0;
+    byId("resendBtn").textContent=remain>0?"Reenviar código ("+remain+" s)":"Reenviar código";
+    if(!remain&&state.resendTimer)clearInterval(state.resendTimer);
+  };
+  update();state.resendTimer=setInterval(update,1000);
+}
+byId("resendBtn").addEventListener("click",async()=>{
+  if(!state.client||!state.email||Date.now()-state.lastSent<60000)return;
+  busy("resendBtn",true);
+  try{const {error}=await state.client.auth.signInWithOtp({email:state.email,options:{shouldCreateUser:false}});if(error)throw error;state.lastSent=Date.now();countdown();notice("Nuevo código solicitado. Revisa tu correo y Spam.","success")}
+  catch(err){notice("No se pudo reenviar. Respeta el límite de solicitudes y vuelve a intentarlo. "+String(err.message||err),"error")}
+  finally{busy("resendBtn",false)}
+});
+byId("changeEmail").addEventListener("click",()=>{byId("otp").value="";show("login","Acceso personal")});
+byId("logoutBtn").addEventListener("click",async()=>{if(state.client)await state.client.auth.signOut();state.email="";show("login","Acceso personal");notice("Sesión cerrada correctamente.","success")});
+byId("settingsBtn").addEventListener("click",async()=>{if(state.client){const x=await state.client.auth.getSession();if(x.data.session)await state.client.auth.signOut()}show("config","Configuración pública")});
+window.addEventListener("DOMContentLoaded",restore);
+})();
+</script>
+</body>
+</html>
