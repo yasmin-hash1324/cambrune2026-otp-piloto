@@ -101,6 +101,47 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
 .bulkSendButtons button:disabled{opacity:.55;cursor:wait}
 .bulkOutcome{margin-top:14px!important;padding:12px;border:1px solid #BBD2C2;background:#ECF6ED;border-radius:9px;color:#215737!important;font-size:12px}
 @media(max-width:590px){.bulkPrepBtn,.bulkSendButtons button{width:100%}}
+
+/* Dashboard de trabajo — continuidad visual con la V4.4 */
+body.dashboardActive .wrap{max-width:1290px;grid-template-columns:minmax(0,1fr);margin-top:24px}
+body.dashboardActive .hero{display:none}
+body.dashboardActive .card{grid-column:1/-1}
+.personalDashboard{grid-column:1/-1;min-width:0;border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:0 12px 40px #0B362112;padding:24px}
+.dashHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.dashHead h2{font-size:26px;margin:2px 0 4px;letter-spacing:-.03em}
+.dashKicker{font-weight:800;letter-spacing:.1em;color:#708F76;font-size:10px;margin:0}
+.dashHead .muted{margin:0;font-size:12px}
+.dashNotice{background:#EEF5ED;border-left:3px solid var(--gold);padding:12px 14px;font-size:12px;border-radius:0 9px 9px 0;margin:18px 0}
+.dashStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0}
+.dashStat{background:#F7FAF7;border:1px solid #DFE8E0;border-radius:13px;padding:15px}
+.dashStat strong{display:block;font-size:26px;line-height:1.3;color:#163D2A}
+.dashStat small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.dashSectionHeading{margin:22px 0 12px}
+.dashSectionHeading h3{font-size:17px;margin:0 0 4px}
+.dashSectionHeading p{font-size:12px;color:var(--muted);margin:0}
+.dashCommissionCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.dashCommissionCard{border:1px solid #DDE8DE;background:#FCFDFC;border-radius:12px;text-align:left;padding:14px;min-height:133px;cursor:pointer;width:100%;margin:0}
+.dashCommissionCard:hover,.dashCommissionCard:focus-visible{outline:2px solid #97B89C;outline-offset:1px}
+.dashCommissionCard small{display:block;color:#62816B;font-size:10px;font-weight:800}
+.dashCommissionCard strong{display:block;font-size:13px;margin:5px 0 8px;line-height:1.3}
+.dashCommissionCard .dashNumbers{display:flex;justify-content:space-between;color:#567263;font-size:11px;gap:8px}
+.dashNumbers b{font-size:17px;color:#174B30}
+.dashActivitiesSection{border-top:1px solid #E1EAE2;margin-top:21px}
+.dashFilters{display:flex;gap:11px;flex-wrap:wrap}
+.dashFilters label{display:flex;flex-direction:column;gap:5px;flex:1 1 220px;min-width:0;font-size:12px;font-weight:750}
+.dashFilters select,.dashFilters input{width:100%;padding:11px;border:1px solid #C8D8CA;border-radius:10px;color:#254C32;background:#fff}
+.dashActivityCount{font-size:12px;color:#567363;margin:14px 0 8px}
+.dashActivityRows{border:1px solid #E0E8E1;border-radius:12px;overflow:hidden}
+.dashActivityRow{display:grid;grid-template-columns:100px minmax(0,1fr) 128px;gap:13px;align-items:center;padding:13px 14px;border-bottom:1px solid #E8EFE9}
+.dashActivityRow:last-child{border-bottom:0}
+.dashActivityRow .dashTaskId{font-size:11px;color:#50715B;font-weight:800}
+.dashActivityRow .dashTaskTitle{font-size:12px;font-weight:700;line-height:1.4}
+.dashActivityRow .dashTaskBlock{display:block;font-size:11px;color:var(--muted);margin-top:4px;font-weight:400}
+.dashActivityRow .dashTaskStatus{text-align:center;font-size:10px;font-weight:750;color:#8A611A;background:#FFF5DF;padding:6px 8px;border-radius:30px}
+.dashDisclaimer{font-size:11px;line-height:1.6;color:#667B6B;border-top:1px solid #E2E9E2;margin:20px 0 0;padding-top:12px}
+@media(max-width:1000px){.dashCommissionCards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:790px){.personalDashboard{padding:16px}.dashStats{grid-template-columns:repeat(2,minmax(0,1fr))}.dashActivityRow{grid-template-columns:72px minmax(0,1fr);gap:7px}.dashActivityRow .dashTaskStatus{grid-column:2;justify-self:start}.dashHead h2{font-size:23px}}
+@media(max-width:480px){.dashCommissionCards{grid-template-columns:1fr 1fr}.dashCommissionCard{min-height:115px;padding:11px}.dashCommissionCard strong{font-size:12px}}
 </style>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -148,13 +189,55 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
     <span id="resultTag" class="tag warn">Identidad verificada</span>
     <div class="account" style="margin-top:14px"><strong id="displayTitle"></strong><small id="displayEmail"></small><div id="rolesList" class="roleList"></div></div>
     <p id="resultText" class="muted" style="margin-top:16px"></p>
-    <button id="adminOpenBtn" type="button" class="cta" hidden>Gestión de usuarios · Presidencia / Vicepresidencia</button>
+    <button id="viewDashboardBtn" type="button" class="cta" hidden>Ver mi tablero de trabajo</button>
+    <button id="adminOpenBtn" type="button" class="secondary" hidden>Gestión de usuarios · Presidencia / Vicepresidencia</button>
     <button id="securityTestBtn" type="button" class="secondary" hidden>Comprobar protección del servidor</button>
     <p id="securityTestResult" class="muted" hidden role="status" aria-live="polite"></p>
     <button id="logoutBtn" type="button" class="secondary">Cerrar sesión</button>
   </div>
   <div class="smallDivider"></div>
   <p class="muted">Piloto de autenticación. Nunca introduzcas aquí la contraseña de Gmail, la clave SMTP, la contraseña de PostgreSQL ni una clave de servicio Supabase.</p>
+</section>
+<section id="personalDashboard" class="personalDashboard" hidden aria-labelledby="dashTitle">
+  <div class="dashHead">
+    <div>
+      <p class="dashKicker">CAMBRUNE 2026 · ESPACIO DE TRABAJO</p>
+      <h2 id="dashTitle">Tablero personal</h2>
+      <p id="dashSubtitle" class="muted">Consultando tu información...</p>
+    </div>
+    <span id="dashMode" class="tag">Consulta · Fase inicial</span>
+  </div>
+  <div id="dashNotice" class="dashNotice" role="status" aria-live="polite">Verificando acceso a las actividades del proyecto...</div>
+  <div class="dashStats" id="dashStats" hidden>
+    <div class="dashStat"><strong id="dashActivities">—</strong><small>Actividades del ámbito</small></div>
+    <div class="dashStat"><strong id="dashUnvalidated">—</strong><small>Propuestas por validar</small></div>
+    <div class="dashStat"><strong id="dashApproved">—</strong><small>Actividades aprobadas</small></div>
+    <div class="dashStat"><strong id="dashCommissionsCount">—</strong><small>Comisiones visibles</small></div>
+  </div>
+  <div id="dashCommissions" class="dashCommissions" hidden>
+    <div class="dashSectionHeading">
+      <h3 id="dashCommissionsTitle">Seguimiento por comisión</h3>
+      <p>Actividades de la planificación preliminar de la V4.4.</p>
+    </div>
+    <div id="dashCommissionCards" class="dashCommissionCards"></div>
+  </div>
+  <div id="dashActivitiesSection" class="dashActivitiesSection" hidden>
+    <div class="dashSectionHeading">
+      <h3>Actividades planificadas</h3>
+      <p>Catálogo preliminar; los estados todavía no constituyen evidencias de ejecución.</p>
+    </div>
+    <div class="dashFilters">
+      <label for="dashCommissionSelect">Comisión
+        <select id="dashCommissionSelect"><option value="">Todas las autorizadas</option></select>
+      </label>
+      <label for="dashActivitySearch">Buscar
+        <input id="dashActivitySearch" type="search" placeholder="Buscar actividad o bloque">
+      </label>
+    </div>
+    <div id="dashActivityCount" class="dashActivityCount"></div>
+    <div id="dashActivityRows" class="dashActivityRows"></div>
+  </div>
+  <p class="dashDisclaimer">Primera versión conectada a Supabase. El catálogo procede de la V4.4 y requiere validación de la comisión. La asignación personal, presentación de evidencias, cambios de estado y aprobaciones todavía no están habilitados.</p>
 </section>
 <section id="adminBoard" class="adminBoard" hidden aria-label="Gestión de usuarios">
   <div class="adminHead">
@@ -264,7 +347,7 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
 "use strict";
 const byId=id=>document.getElementById(id);
 const panels={login:byId("loginPanel"),otp:byId("otpPanel"),result:byId("resultPanel")};
-const state={client:null,email:"",lastSent:0,resendTimer:null,adminUsers:[],adminPreviewTarget:null,adminSending:false,bulkSelected:new Set(),bulkPreviewInProgress:false,bulkValidated:[],bulkBatchIds:[],bulkSending:false};
+const state={client:null,email:"",lastSent:0,resendTimer:null,adminUsers:[],adminPreviewTarget:null,adminSending:false,bulkSelected:new Set(),bulkPreviewInProgress:false,bulkValidated:[],bulkBatchIds:[],bulkSending:false,dashboardActivities:[],dashboardCommissions:[],dashboardRoles:[],dashboardLoading:false};
 const PROJECT_URL="https://mirtehjtsgzkrciremnw.supabase.co";
 const PUBLISHABLE_KEY="sb_publishable_uuLlmVXl6_1vMuXF2EO7sQ_a5OOcn1p";
 function show(name,title){Object.keys(panels).forEach(k=>panels[k].hidden=k!==name);byId("cardTitle").textContent=title;clearNotice();}
@@ -285,9 +368,166 @@ async function restore(){
     else if(error && !/auth session missing/i.test(error.message||""))notice("Puedes solicitar un nuevo código para iniciar sesión.","info");
   }catch(err){notice("No se pudo conectar con Supabase. Actualiza la página o revisa tu conexión. "+String(err.message||err),"error")}
 }
+
+function resetDashboard(){
+  document.body.classList.remove("dashboardActive");
+  byId("viewDashboardBtn").hidden=true;
+  byId("personalDashboard").hidden=true;
+  byId("dashStats").hidden=true;
+  byId("dashCommissions").hidden=true;
+  byId("dashActivitiesSection").hidden=true;
+  state.dashboardActivities=[];
+  state.dashboardCommissions=[];
+  state.dashboardRoles=[];
+  state.dashboardLoading=false;
+  byId("dashCommissionCards").replaceChildren();
+  byId("dashActivityRows").replaceChildren();
+}
+function dashHasBroadAccess(){
+  return state.dashboardRoles.some(r=>
+    r.rol==="presidencia"||r.rol==="vicepresidencia"||r.rol==="fiscalia");
+}
+function dashName(id){
+  return state.dashboardCommissions.find(c=>c.id===id)?.nombre||"Comisión "+id;
+}
+function renderDashTasks(){
+  const commission=byId("dashCommissionSelect").value;
+  const query=byId("dashActivitySearch").value.trim().toLowerCase();
+  const filtered=state.dashboardActivities.filter(t=>
+    (!commission||t.comision_id===commission)&&
+    (!query||(t.titulo+" "+t.bloque+" "+t.id).toLowerCase().includes(query))
+  );
+  byId("dashActivityCount").textContent=filtered.length+
+    " actividades mostradas de "+state.dashboardActivities.length+" autorizadas";
+  const list=byId("dashActivityRows");
+  list.replaceChildren();
+  if(!filtered.length){
+    const empty=document.createElement("p");
+    empty.className="dashNotice";
+    empty.textContent="No hay actividades que coincidan con los filtros actuales.";
+    list.append(empty);
+    return;
+  }
+  const captions={
+    por_validar:"Por validar",pendiente:"Pendiente",en_progreso:"En progreso",
+    en_revision:"En revisión",observada:"Observada",aprobada:"Aprobada",cancelada:"Cancelada"
+  };
+  for(const a of filtered){
+    const item=document.createElement("div");item.className="dashActivityRow";
+    const code=document.createElement("span");code.className="dashTaskId";code.textContent=a.id;
+    const body=document.createElement("div");
+    const title=document.createElement("strong");title.className="dashTaskTitle";title.textContent=a.titulo;
+    const block=document.createElement("small");block.className="dashTaskBlock";block.textContent=dashName(a.comision_id)+" · "+a.bloque;
+    body.append(title,block);
+    const status=document.createElement("span");status.className="dashTaskStatus";
+    status.textContent=captions[a.estado]||"Por validar";
+    if(a.estado==="aprobada"){status.style.background="#E6F3E9";status.style.color="#1D653C";}
+    item.append(code,body,status);
+    list.append(item);
+  }
+}
+function renderPersonalDashboard(people,roles,activities){
+  const broad=dashHasBroadAccess();
+  const ownCommissions=[...new Set(roles.filter(r=>r.comision_id).map(r=>r.comision_id))];
+  const seen=[...new Set(activities.map(a=>a.comision_id))].sort();
+  const canSee= broad?seen:ownCommissions.filter(id=>seen.includes(id));
+  byId("dashTitle").textContent=broad?
+    (roles.some(r=>r.rol==="presidencia"||r.rol==="vicepresidencia")?
+      "Panel de Presidencia":"Panel de supervisión"):
+    "Panel de mi comisión";
+  byId("dashSubtitle").textContent=people.nombre_completo+
+    (broad?" · Panorama de las actividades de todas las comisiones":" · Actividades correspondientes a tus cargos");
+  byId("dashMode").textContent=broad?"Vista transversal · Consulta":"Mi comisión · Consulta";
+  byId("dashActivities").textContent=String(activities.length);
+  byId("dashUnvalidated").textContent=String(activities.filter(a=>a.estado==="por_validar").length);
+  byId("dashApproved").textContent=String(activities.filter(a=>a.estado==="aprobada").length);
+  byId("dashCommissionsCount").textContent=String(canSee.length);
+  byId("dashStats").hidden=false;
+
+  const container=byId("dashCommissionCards");
+  container.replaceChildren();
+  const showIds=canSee.length?canSee:(broad?state.dashboardCommissions.map(c=>c.id):ownCommissions);
+  for(const id of showIds){
+    const records=activities.filter(a=>a.comision_id===id);
+    const validated=records.filter(a=>a.estado!=="por_validar").length;
+    const card=document.createElement("button");
+    card.type="button";card.className="dashCommissionCard";
+    const marker=document.createElement("small");marker.textContent="COMISIÓN "+id;
+    const name=document.createElement("strong");name.textContent=dashName(id);
+    const counter=document.createElement("span");counter.className="dashNumbers";
+    const numbers=document.createElement("span");
+    const num=document.createElement("b");num.textContent=String(records.length);
+    numbers.append(num,document.createTextNode(" actividades"));
+    const progress=document.createElement("span");progress.textContent=validated+" con estado definido";
+    counter.append(numbers,progress);card.append(marker,name,counter);
+    card.addEventListener("click",()=>{
+      byId("dashCommissionSelect").value=id;
+      renderDashTasks();
+      byId("dashActivitiesSection").scrollIntoView({behavior:"smooth",block:"start"});
+    });
+    container.append(card);
+  }
+  byId("dashCommissionsTitle").textContent=broad?"Seguimiento por comisión":"Mi ámbito de trabajo";
+  byId("dashCommissions").hidden=false;
+  const sel=byId("dashCommissionSelect");
+  sel.replaceChildren();
+  const all=document.createElement("option");
+  all.value="";all.textContent=broad?"Todas las comisiones autorizadas":"Todas mis actividades";
+  sel.append(all);
+  for(const id of showIds){
+    const option=document.createElement("option");
+    option.value=id;option.textContent=id+" · "+dashName(id);
+    sel.append(option);
+  }
+  if(!broad&&showIds.length===1)sel.value=showIds[0];
+  byId("dashActivitySearch").value="";
+  byId("dashActivitiesSection").hidden=false;
+  renderDashTasks();
+}
+async function loadPersonalDashboard(person,roles){
+  resetDashboard();
+  state.dashboardRoles=roles;
+  byId("personalDashboard").hidden=false;
+  byId("viewDashboardBtn").hidden=false;
+  document.body.classList.add("dashboardActive");
+  const notice=byId("dashNotice");
+  notice.textContent="Consultando las actividades autorizadas para tu perfil...";
+  state.dashboardLoading=true;
+  try{
+    const [a,c]=await Promise.all([
+      state.client.from("cambrune_actividades")
+        .select("id,comision_id,fase,bloque,titulo,estado,fecha_limite")
+        .order("id",{ascending:true}),
+      state.client.from("cambrune_comisiones").select("id,nombre").order("id")
+    ]);
+    if(a.error){
+      notice.textContent="Aún no está disponible el catálogo de actividades en Supabase. Presidencia debe ejecutar la Migración 006; no se mostrarán datos simulados.";
+      byId("dashTitle").textContent="Tablero de trabajo";
+      byId("dashSubtitle").textContent="Identidad confirmada. Catálogo de actividades pendiente de publicación.";
+      return;
+    }
+    if(c.error){
+      notice.textContent="No fue posible consultar las comisiones. Actualiza la página e inténtalo de nuevo.";
+      return;
+    }
+    state.dashboardActivities=a.data||[];
+    state.dashboardCommissions=c.data||[];
+    notice.textContent="Catálogo PRE recuperado desde Supabase. Las actividades están registradas como propuestas por validar; aún no representan avances ejecutados.";
+    renderPersonalDashboard(person,roles,state.dashboardActivities);
+  }catch{
+    notice.textContent="No se pudo cargar el tablero. Actualiza la página o informa a Presidencia.";
+  }finally{state.dashboardLoading=false}
+}
+byId("dashCommissionSelect").addEventListener("change",renderDashTasks);
+byId("dashActivitySearch").addEventListener("input",renderDashTasks);
+byId("viewDashboardBtn").addEventListener("click",()=>{
+  byId("personalDashboard").scrollIntoView({behavior:"smooth",block:"start"});
+});
+
 async function loadProfile(user){
   const client=state.client;
   if(!user||!client)return;
+  resetDashboard();
   show("result","Estado de tu acceso");
   byId("resultTag").className="tag warn";
   byId("resultTag").textContent="Comprobando identidad";
@@ -378,8 +618,9 @@ async function loadProfile(user){
     pill.textContent=r.rol+(r.comision_id?" · Comisión "+r.comision_id:"");
     byId("rolesList").appendChild(pill);
   });
-  byId("resultText").textContent="Cuenta verificada y vinculada correctamente. Esta versión piloto comprueba identidad y roles; los dashboards y permisos documentales se habilitarán en fases posteriores.";
+  byId("resultText").textContent="Cuenta verificada. Ya puedes consultar tu tablero de trabajo y el catálogo preliminar de actividades correspondiente a tus permisos.";
   byId("adminOpenBtn").hidden=!(roles||[]).some(r=>r.rol==="presidencia"||r.rol==="vicepresidencia");
+  await loadPersonalDashboard(p,roles||[]);
 }
 
 
@@ -882,7 +1123,7 @@ byId("resendBtn").addEventListener("click",async()=>{
   finally{busy("resendBtn",false)}
 });
 byId("changeEmail").addEventListener("click",()=>{byId("otp").value="";show("login","Acceso personal")});
-byId("logoutBtn").addEventListener("click",async()=>{if(state.client)await state.client.auth.signOut();state.email="";state.adminUsers=[];state.bulkSelected.clear();resetBulkPreview();resetAdminPreview();byId("adminBoard").hidden=true;byId("adminOpenBtn").hidden=true;byId("securityTestBtn").hidden=true;byId("securityTestResult").hidden=true;show("login","Acceso personal");notice("Sesión cerrada correctamente.","success")});
+byId("logoutBtn").addEventListener("click",async()=>{if(state.client)await state.client.auth.signOut();state.email="";state.adminUsers=[];state.bulkSelected.clear();resetBulkPreview();resetAdminPreview();resetDashboard();byId("adminBoard").hidden=true;byId("adminOpenBtn").hidden=true;byId("securityTestBtn").hidden=true;byId("securityTestResult").hidden=true;show("login","Acceso personal");notice("Sesión cerrada correctamente.","success")});
 window.addEventListener("DOMContentLoaded",restore);
 })();
 </script>
