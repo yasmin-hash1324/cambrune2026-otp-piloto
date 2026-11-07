@@ -91,6 +91,16 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
 .bulkEntry small{color:var(--muted)}
 .adminRowCheckbox{width:17px;height:17px;accent-color:#175030;cursor:pointer}
 @media(max-width:790px){.bulkPanel{padding:14px}.bulkTools button{flex:1}.bulkPreviewButton{width:100%}.bulkEntry{grid-template-columns:1fr;gap:3px}}
+
+.bulkPrepBtn{width:auto;margin:6px 0 4px}
+.bulkSendPanel{margin-top:14px;padding:16px;background:#fff;border:1px solid #C6D9CA;border-radius:12px}
+.bulkSendPanel h4{margin:0;font-size:16px}
+.bulkSendPanel>p{margin:9px 0 12px}
+.bulkSendButtons{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:13px}
+.bulkSendButtons button{width:auto;margin:0}
+.bulkSendButtons button:disabled{opacity:.55;cursor:wait}
+.bulkOutcome{margin-top:14px!important;padding:12px;border:1px solid #BBD2C2;background:#ECF6ED;border-radius:9px;color:#215737!important;font-size:12px}
+@media(max-width:590px){.bulkPrepBtn,.bulkSendButtons button{width:100%}}
 </style>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -222,7 +232,21 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
       <p id="bulkResultText">Preparando...</p>
       <div id="bulkSummary" hidden></div>
       <div id="bulkEntries" class="bulkEntries" hidden></div>
-      <p class="adminHint">Revisión informativa. El envío del lote sigue deshabilitado hasta aprobar el mecanismo de procesamiento gradual y los límites del proveedor.</p>
+      <div id="bulkSendOffer" hidden>
+        <p class="bulkHelper">Envía únicamente hasta tres invitaciones de este lote validado por operación.</p>
+        <button type="button" id="bulkPrepareSend" class="secondary bulkPrepBtn">Preparar tanda de hasta 3 (sin enviar)</button>
+      </div>
+      <div id="bulkSendPanel" class="bulkSendPanel" hidden>
+        <h4>Confirmar envío de la tanda</h4>
+        <p id="bulkSendDescription"></p>
+        <div id="bulkSendRecipients" class="bulkEntries"></div>
+        <div class="bulkSendButtons">
+          <button type="button" id="bulkCancelSend" class="secondary">Cancelar</button>
+          <button type="button" id="bulkConfirmSend" class="cta">Sí, enviar estas invitaciones</button>
+        </div>
+      </div>
+      <p id="bulkSendOutcome" class="bulkOutcome" hidden role="status" aria-live="polite"></p>
+      <p class="adminHint">Los envíos requieren confirmación. El servidor limita cada tanda a tres destinatarios y registra los intentos recientes. Los casos fallidos no se reenvían automáticamente.</p>
     </div>
   </section>
   <div class="adminTableWrap">
@@ -231,7 +255,7 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
       <tbody id="adminRows"></tbody>
     </table>
   </div>
-  <p class="adminHint">Las invitaciones individuales conservan su confirmación de dos pasos. La selección múltiple solo prepara un lote: no enviará correos hasta que se habilite el procesamiento seguro por tandas.</p>
+  <p class="adminHint">Las invitaciones individuales siguen disponibles. Para las múltiples, revisa el lote, prepara hasta tres destinatarios y confirma el envío de esa tanda. No se realizan envíos automáticos.</p>
 </section>
 </main>
 <footer class="footer">Cambrune 2026 · V5.0 piloto · Identidades verificadas por Supabase Auth · Permisos controlados mediante políticas RLS</footer>
@@ -240,7 +264,7 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
 "use strict";
 const byId=id=>document.getElementById(id);
 const panels={login:byId("loginPanel"),otp:byId("otpPanel"),result:byId("resultPanel")};
-const state={client:null,email:"",lastSent:0,resendTimer:null,adminUsers:[],adminPreviewTarget:null,adminSending:false,bulkSelected:new Set(),bulkPreviewInProgress:false};
+const state={client:null,email:"",lastSent:0,resendTimer:null,adminUsers:[],adminPreviewTarget:null,adminSending:false,bulkSelected:new Set(),bulkPreviewInProgress:false,bulkValidated:[],bulkBatchIds:[],bulkSending:false};
 const PROJECT_URL="https://mirtehjtsgzkrciremnw.supabase.co";
 const PUBLISHABLE_KEY="sb_publishable_uuLlmVXl6_1vMuXF2EO7sQ_a5OOcn1p";
 function show(name,title){Object.keys(panels).forEach(k=>panels[k].hidden=k!==name);byId("cardTitle").textContent=title;clearNotice();}
@@ -483,17 +507,28 @@ function visibleAdminUsers(){
   });
 }
 function resetBulkPreview(){
+  if(state.bulkSending)return;
+  state.bulkValidated=[];
+  state.bulkBatchIds=[];
   byId("bulkResult").hidden=true;
   byId("bulkSummary").hidden=true;
   byId("bulkEntries").hidden=true;
+  byId("bulkSendOffer").hidden=true;
+  byId("bulkSendPanel").hidden=true;
+  byId("bulkSendOutcome").hidden=true;
   byId("bulkResultText").textContent="";
   byId("bulkSummary").textContent="";
   byId("bulkEntries").replaceChildren();
+  byId("bulkSendRecipients").replaceChildren();
+  byId("bulkSendDescription").textContent="";
+  byId("bulkSendOutcome").textContent="";
+  byId("bulkConfirmSend").disabled=false;
+  byId("bulkCancelSend").disabled=false;
 }
 function refreshBulkCount(){
   const count=state.bulkSelected.size;
   byId("bulkSelectedCount").textContent=count+" participante"+(count===1?"":"s")+" seleccionado"+(count===1?"":"s");
-  byId("bulkPreviewBtn").disabled=count===0||state.bulkPreviewInProgress;
+  byId("bulkPreviewBtn").disabled=count===0||state.bulkPreviewInProgress||state.bulkSending;
 }
 function clearBulkSelection(){
   state.bulkSelected.clear();
@@ -515,7 +550,7 @@ byId("bulkCommission").addEventListener("change",()=>{
   displayAdminRows();
 });
 byId("bulkPreviewBtn").addEventListener("click",async()=>{
-  if(!state.client||byId("adminOpenBtn").hidden||state.bulkPreviewInProgress)return;
+  if(!state.client||byId("adminOpenBtn").hidden||state.bulkPreviewInProgress||state.bulkSending)return;
   const ids=[...state.bulkSelected];
   if(ids.length<1||ids.length>40)return;
   const eligibleIds=new Set(state.adminUsers.filter(isEligibleForBulk).map(x=>x.invitacion_id));
@@ -563,6 +598,13 @@ byId("bulkPreviewBtn").addEventListener("click",async()=>{
       list.append(entry);
     }
     list.hidden=false;
+    state.bulkValidated=data.participantes.map(p=>({
+      invitacion_id:String(p.invitacion_id),
+      nombre_completo:String(p.nombre_completo),
+      correo:String(p.correo),
+      comision_id:p.comision_id
+    }));
+    byId("bulkSendOffer").hidden=false;
     area.scrollIntoView({behavior:"smooth",block:"nearest"});
   }catch(err){
     byId("bulkResultText").textContent="No se completó la validación: "+String(err.message||err)+
@@ -572,6 +614,93 @@ byId("bulkPreviewBtn").addEventListener("click",async()=>{
   }finally{
     state.bulkPreviewInProgress=false;
     refreshBulkCount();
+  }
+});
+
+byId("bulkPrepareSend").addEventListener("click",()=>{
+  if(state.bulkSending||state.bulkPreviewInProgress||byId("adminOpenBtn").hidden)return;
+  const verified=state.bulkValidated;
+  if(!verified.length)return;
+  const stillEligible=new Set(state.adminUsers.filter(isEligibleForBulk).map(p=>p.invitacion_id));
+  if(verified.some(p=>!stillEligible.has(p.invitacion_id))){
+    byId("bulkSendOutcome").hidden=false;
+    byId("bulkSendOutcome").textContent="Un destinatario cambió de estado. Actualiza el padrón y revisa de nuevo el lote.";
+    return;
+  }
+  const batch=verified.slice(0,3);
+  state.bulkBatchIds=batch.map(p=>p.invitacion_id);
+  const area=byId("bulkSendRecipients");
+  area.replaceChildren();
+  for(const p of batch){
+    const row=document.createElement("div");row.className="bulkEntry";
+    const name=document.createElement("strong");name.textContent=p.nombre_completo;
+    const mail=document.createElement("span");mail.textContent=p.correo;
+    const commission=document.createElement("small");commission.textContent="Comisión "+(p.comision_id||"—");
+    row.append(name,mail,commission);area.append(row);
+  }
+  byId("bulkSendDescription").textContent="Se enviarán únicamente "+batch.length+
+    " invitaciones de las "+verified.length+" comprobadas. Verifica los correos antes de confirmar.";
+  byId("bulkSendOutcome").hidden=true;
+  byId("bulkSendPanel").hidden=false;
+  byId("bulkConfirmSend").disabled=false;
+  byId("bulkCancelSend").disabled=false;
+  byId("bulkSendPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
+});
+byId("bulkCancelSend").addEventListener("click",()=>{
+  if(state.bulkSending)return;
+  state.bulkBatchIds=[];
+  byId("bulkSendPanel").hidden=true;
+  byId("bulkSendOutcome").hidden=false;
+  byId("bulkSendOutcome").textContent="Tanda cancelada. No se han enviado correos.";
+});
+byId("bulkConfirmSend").addEventListener("click",async()=>{
+  if(state.bulkSending||byId("bulkSendPanel").hidden||
+     byId("adminOpenBtn").hidden||!state.client)return;
+  const ids=[...state.bulkBatchIds];
+  if(!ids.length||ids.length>3)return;
+  const validated=new Set(state.bulkValidated.map(p=>p.invitacion_id));
+  if(ids.some(id=>!validated.has(id)))return;
+  state.bulkSending=true;
+  for(const id of ["bulkConfirmSend","bulkCancelSend","bulkPrepareSend","bulkPreviewBtn"]) byId(id).disabled=true;
+  byId("bulkSendOutcome").hidden=false;
+  byId("bulkSendOutcome").textContent="Supabase está procesando esta tanda. No repitas el envío ni cierres esta ventana...";
+  try{
+    const {data,error}=await state.client.functions.invoke("cambrune-send-batch",{
+      body:{action:"send-batch",invitacion_ids:ids,confirmacion:"ENVIAR_TANDA"}
+    });
+    if(error){
+      let msg="No se pudo confirmar el estado del procesamiento.";
+      try{const details=await error.context?.json();if(details?.error)msg=String(details.error)}catch{}
+      throw Error(msg);
+    }
+    if(!data||data.completo!==true||data.total_procesado!==ids.length||!Array.isArray(data.resultados)){
+      throw Error("El servidor no devolvió una confirmación completa.");
+    }
+    const accepted=data.resultados.filter(x=>x.resultado==="enviado").length;
+    const review=data.resultados.filter(x=>x.resultado!=="enviado").length;
+    const detail=data.resultados.map(x=>x.nombre_completo+" — "+
+      (x.resultado==="enviado"?"aceptado por Supabase":"requiere revisión")).join(" · ");
+    byId("bulkSendOutcome").textContent="Resultado de la tanda: "+accepted+
+      " aceptadas y "+review+" por revisar. "+detail+
+      ". Verifica los buzones antes de continuar.";
+    byId("bulkResultText").textContent="Tanda procesada. Actualiza la lista para consultar los nuevos estados.";
+    byId("adminMsg").textContent="Tanda procesada: "+accepted+" aceptadas, "+review+" requieren revisión.";
+  }catch(e){
+    byId("bulkSendOutcome").textContent="Revisión necesaria: "+String(e.message||e)+
+      " Puede haberse iniciado algún envío. No repitas la operación: actualiza el padrón y comprueba los registros.";
+    byId("bulkResultText").textContent="No se pudo confirmar el resultado. Verifica el registro antes de otro envío.";
+  }finally{
+    state.bulkSending=false;
+    state.bulkValidated=[];
+    state.bulkBatchIds=[];
+    state.bulkSelected.clear();
+    byId("bulkSendPanel").hidden=true;
+    byId("bulkSendOffer").hidden=true;
+    byId("bulkEntries").hidden=true;
+    byId("bulkSummary").hidden=true;
+    for(const id of ["bulkConfirmSend","bulkCancelSend","bulkPrepareSend"])byId(id).disabled=false;
+    refreshBulkCount();
+    displayAdminRows();
   }
 });
 
@@ -640,7 +769,7 @@ function displayAdminRows() {
 }
 
 async function loadAdminUsers() {
-  if(!state.client||byId("adminOpenBtn").hidden)return;
+  if(!state.client||byId("adminOpenBtn").hidden||state.bulkSending)return;
   resetAdminPreview();
   byId("adminMsg").textContent="Consultando el padrón seguro...";
   byId("adminRefresh").disabled=true;
