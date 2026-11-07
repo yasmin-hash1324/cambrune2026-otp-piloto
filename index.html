@@ -69,6 +69,28 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
 @media(max-width:540px){.adminConfirm .adminSendOne,.adminFinalActions button{width:100%}}
 .adminCheckBtn{display:inline-block;width:auto !important;margin:0 !important;padding:7px 11px !important;font-size:12px !important;white-space:nowrap}
 .adminTable td:last-child{text-align:center}
+
+.bulkPanel{border:1px solid #C9DCCB;border-radius:14px;background:#F8FAF7;padding:19px;margin:17px 0}
+.bulkPanel h3{margin:0;font-size:18px}
+.bulkPanel p{font-size:12px;color:var(--muted);margin:6px 0}
+.bulkTools{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin:15px 0}
+.bulkTools label{display:flex;flex-direction:column;gap:5px;flex:1 1 270px;font-size:12px;font-weight:700}
+.bulkTools select{width:100%;padding:10px 11px;min-height:43px;background:white;color:var(--ink);border:1px solid #BFD3C4;border-radius:9px}
+.bulkTools button{width:auto;margin:0;padding:10px 12px}
+.bulkActions{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.bulkActions strong{font-size:13px}
+.bulkPreviewButton{width:auto;margin:0}
+.bulkHelper{border-left:3px solid #D1A044;padding-left:10px}
+.bulkResult{margin-top:17px;padding:15px;background:white;border:1px solid #BFD3C4;border-radius:11px}
+.bulkResult h4{margin:0;font-size:16px}
+.bulkResult #bulkResultText{margin:7px 0 12px;color:#355B43}
+.bulkSummary{margin:10px 0;font-weight:700}
+.bulkEntries{max-height:310px;overflow:auto;border:1px solid #E3EAE3;border-radius:8px}
+.bulkEntry{padding:9px 10px;border-bottom:1px solid #E9EEE8;display:grid;grid-template-columns:1.25fr 1.3fr auto;gap:10px;align-items:center;font-size:12px;overflow-wrap:anywhere}
+.bulkEntry:last-child{border-bottom:0}
+.bulkEntry small{color:var(--muted)}
+.adminRowCheckbox{width:17px;height:17px;accent-color:#175030;cursor:pointer}
+@media(max-width:790px){.bulkPanel{padding:14px}.bulkTools button{flex:1}.bulkPreviewButton{width:100%}.bulkEntry{grid-template-columns:1fr;gap:3px}}
 </style>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -126,8 +148,8 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
 </section>
 <section id="adminBoard" class="adminBoard" hidden aria-label="Gestión de usuarios">
   <div class="adminHead">
-    <div><h2>Gestión de usuarios</h2><p>Cambrune 2026 · Panel administrativo de consulta</p></div>
-    <span class="tag">Fase 1 · Solo lectura</span>
+    <div><h2>Gestión de usuarios</h2><p>Cambrune 2026 · Administración de cuentas e invitaciones</p></div>
+    <span class="tag">Fase 2 · Invitaciones controladas</span>
   </div>
   <div class="adminStats">
     <div class="adminStat"><strong id="adminTotal">—</strong><small>Participantes</small></div>
@@ -165,13 +187,51 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
       </div>
     </div>
   </section>
+  <section id="bulkPanel" class="bulkPanel" aria-labelledby="bulkTitle">
+    <div class="adminHead">
+      <div>
+        <h3 id="bulkTitle">Preparar invitaciones múltiples</h3>
+        <p>Selecciona una comisión o participantes individuales. La vista previa no realiza envíos.</p>
+      </div>
+      <span class="adminPill">LOTE SIN ENVÍO</span>
+    </div>
+    <div class="bulkTools">
+      <label for="bulkCommission">Comisión
+        <select id="bulkCommission">
+          <option value="">Todas las comisiones</option>
+          <option value="01">01 · Diagnóstico y Gestión Sanitaria</option>
+          <option value="02">02 · Logística y Movilidad</option>
+          <option value="03">03 · Donaciones y Alianzas</option>
+          <option value="04">04 · Finanzas e Inventario</option>
+          <option value="05">05 · Comunicación y Difusión</option>
+          <option value="06">06 · Programa Educativo</option>
+          <option value="07">07 · Clasificación y Empaque</option>
+          <option value="08">08 · Documentación y Evaluación</option>
+        </select>
+      </label>
+      <button type="button" id="bulkSelectVisible" class="secondary">Seleccionar disponibles de esta vista</button>
+      <button type="button" id="bulkClear" class="secondary">Limpiar selección</button>
+    </div>
+    <div class="bulkActions">
+      <strong id="bulkSelectedCount">0 participantes seleccionados</strong>
+      <button type="button" id="bulkPreviewBtn" class="cta bulkPreviewButton" disabled>Revisar lote seleccionado</button>
+    </div>
+    <p class="bulkHelper">Solo se pueden seleccionar invitaciones pendientes, con correo y sin envío anterior. Pamela y Vallery quedan excluidas automáticamente.</p>
+    <div id="bulkResult" class="bulkResult" hidden role="status" aria-live="polite">
+      <h4>Vista previa del lote</h4>
+      <p id="bulkResultText">Preparando...</p>
+      <div id="bulkSummary" hidden></div>
+      <div id="bulkEntries" class="bulkEntries" hidden></div>
+      <p class="adminHint">Revisión informativa. El envío del lote sigue deshabilitado hasta aprobar el mecanismo de procesamiento gradual y los límites del proveedor.</p>
+    </div>
+  </section>
   <div class="adminTableWrap">
     <table class="adminTable">
-      <thead><tr><th>Participante</th><th>Correo registrado</th><th>Cargos</th><th>Activación</th><th>Comprobar</th></tr></thead>
+      <thead><tr><th>Seleccionar</th><th>Participante</th><th>Correo registrado</th><th>Cargos</th><th>Activación</th><th>Comprobar</th></tr></thead>
       <tbody id="adminRows"></tbody>
     </table>
   </div>
-  <p class="adminHint">La vista previa no envía correos. Para enviar, revisa el destinatario y confirma el envío en dos pasos. Los envíos masivos no están habilitados.</p>
+  <p class="adminHint">Las invitaciones individuales conservan su confirmación de dos pasos. La selección múltiple solo prepara un lote: no enviará correos hasta que se habilite el procesamiento seguro por tandas.</p>
 </section>
 </main>
 <footer class="footer">Cambrune 2026 · V5.0 piloto · Identidades verificadas por Supabase Auth · Permisos controlados mediante políticas RLS</footer>
@@ -180,7 +240,7 @@ button,input{font:inherit}button{cursor:pointer}.top{background:var(--green);bor
 "use strict";
 const byId=id=>document.getElementById(id);
 const panels={login:byId("loginPanel"),otp:byId("otpPanel"),result:byId("resultPanel")};
-const state={client:null,email:"",lastSent:0,resendTimer:null,adminUsers:[],adminPreviewTarget:null,adminSending:false};
+const state={client:null,email:"",lastSent:0,resendTimer:null,adminUsers:[],adminPreviewTarget:null,adminSending:false,bulkSelected:new Set(),bulkPreviewInProgress:false};
 const PROJECT_URL="https://mirtehjtsgzkrciremnw.supabase.co";
 const PUBLISHABLE_KEY="sb_publishable_uuLlmVXl6_1vMuXF2EO7sQ_a5OOcn1p";
 function show(name,title){Object.keys(panels).forEach(k=>panels[k].hidden=k!==name);byId("cardTitle").textContent=title;clearNotice();}
@@ -406,16 +466,138 @@ byId("adminConfirmSend").addEventListener("click",async()=>{
   }
 });
 
-function displayAdminRows() {
+function isEligibleForBulk(p){
+  return !!(p && p.invitacion_id && !p.vinculada &&
+    p.estado_invitacion==="pendiente" && p.estado_envio==="sin_enviar");
+}
+function selectedCommission(p){
+  return (p.cargos||[]).find(c=>c.comision_id)?.comision_id||"";
+}
+function visibleAdminUsers(){
   const query=byId("adminSearch").value.trim().toLowerCase();
+  const filter=byId("bulkCommission").value;
+  return state.adminUsers.filter(x=>{
+    const cargos=(x.cargos||[]).map(c=>c.rol+" "+(c.comision_id||"")).join(" ");
+    return (x.nombre_completo+" "+(x.correo||"")+" "+cargos).toLowerCase().includes(query)
+      && (!filter || selectedCommission(x)===filter);
+  });
+}
+function resetBulkPreview(){
+  byId("bulkResult").hidden=true;
+  byId("bulkSummary").hidden=true;
+  byId("bulkEntries").hidden=true;
+  byId("bulkResultText").textContent="";
+  byId("bulkSummary").textContent="";
+  byId("bulkEntries").replaceChildren();
+}
+function refreshBulkCount(){
+  const count=state.bulkSelected.size;
+  byId("bulkSelectedCount").textContent=count+" participante"+(count===1?"":"s")+" seleccionado"+(count===1?"":"s");
+  byId("bulkPreviewBtn").disabled=count===0||state.bulkPreviewInProgress;
+}
+function clearBulkSelection(){
+  state.bulkSelected.clear();
+  resetBulkPreview();
+  refreshBulkCount();
+  displayAdminRows();
+}
+byId("bulkSelectVisible").addEventListener("click",()=>{
+  for(const p of visibleAdminUsers()){
+    if(isEligibleForBulk(p))state.bulkSelected.add(p.invitacion_id);
+  }
+  resetBulkPreview();
+  refreshBulkCount();
+  displayAdminRows();
+});
+byId("bulkClear").addEventListener("click",clearBulkSelection);
+byId("bulkCommission").addEventListener("change",()=>{
+  resetBulkPreview();
+  displayAdminRows();
+});
+byId("bulkPreviewBtn").addEventListener("click",async()=>{
+  if(!state.client||byId("adminOpenBtn").hidden||state.bulkPreviewInProgress)return;
+  const ids=[...state.bulkSelected];
+  if(ids.length<1||ids.length>40)return;
+  const eligibleIds=new Set(state.adminUsers.filter(isEligibleForBulk).map(x=>x.invitacion_id));
+  if(ids.some(id=>!eligibleIds.has(id))){
+    byId("adminMsg").textContent="La selección contiene registros que han cambiado de estado. Actualiza la lista.";
+    clearBulkSelection();
+    return;
+  }
+  const area=byId("bulkResult");
+  area.hidden=false;
+  resetBulkPreview();
+  area.hidden=false;
+  byId("bulkResultText").textContent="Verificando "+ids.length+" registros en el servidor. No se enviarán correos...";
+  state.bulkPreviewInProgress=true;
+  refreshBulkCount();
+  try{
+    const {data,error}=await state.client.functions.invoke("cambrune-batch-invite",{
+      body:{action:"preview-batch",invitacion_ids:ids}
+    });
+    if(error){
+      let msg="No se pudo verificar el lote.";
+      try{
+        const details=await error.context?.json();
+        if(details?.error)msg=String(details.error);
+      }catch{}
+      throw Error(msg);
+    }
+    if(!data||data.listo!==true||data.modo!=="solo_vista_previa"||data.total!==ids.length||!Array.isArray(data.participantes)){
+      throw Error(data?.error||"Respuesta del servidor incompleta. No se autorizará ningún envío.");
+    }
+    byId("bulkResultText").textContent=data.total+" invitaciones válidas. No se ha enviado ningún mensaje.";
+    const summaries=Object.entries(data.comisiones||{}).sort(([a],[b])=>a.localeCompare(b))
+      .map(([c,n])=>"Comisión "+c+": "+n).join(" · ");
+    byId("bulkSummary").textContent=summaries;
+    byId("bulkSummary").hidden=false;
+    const list=byId("bulkEntries");
+    list.replaceChildren();
+    for(const p of data.participantes){
+      const entry=document.createElement("div");
+      entry.className="bulkEntry";
+      const name=document.createElement("strong");name.textContent=p.nombre_completo;
+      const mail=document.createElement("span");mail.textContent=p.correo;
+      const commission=document.createElement("small");commission.textContent="Comisión "+(p.comision_id||"—");
+      entry.append(name,mail,commission);
+      list.append(entry);
+    }
+    list.hidden=false;
+    area.scrollIntoView({behavior:"smooth",block:"nearest"});
+  }catch(err){
+    byId("bulkResultText").textContent="No se completó la validación: "+String(err.message||err)+
+      " No se enviaron correos.";
+    byId("bulkSummary").hidden=true;
+    byId("bulkEntries").hidden=true;
+  }finally{
+    state.bulkPreviewInProgress=false;
+    refreshBulkCount();
+  }
+});
+
+function displayAdminRows() {
   const body=byId("adminRows");
   body.replaceChildren();
-  const filtered=state.adminUsers.filter(x=>{
-    const cargoText=(x.cargos||[]).map(c=>c.rol+" "+(c.comision_id||"")).join(" ");
-    return (x.nombre_completo+" "+(x.correo||"")+" "+cargoText).toLowerCase().includes(query);
-  });
+  const filtered=visibleAdminUsers();
   for(const p of filtered){
     const tr=document.createElement("tr");
+    const selection=document.createElement("td");
+    if(isEligibleForBulk(p)){
+      const ch=document.createElement("input");
+      ch.type="checkbox";
+      ch.className="adminRowCheckbox";
+      ch.setAttribute("aria-label","Seleccionar "+p.nombre_completo);
+      ch.checked=state.bulkSelected.has(p.invitacion_id);
+      ch.addEventListener("change",()=>{
+        if(ch.checked)state.bulkSelected.add(p.invitacion_id);
+        else state.bulkSelected.delete(p.invitacion_id);
+        resetBulkPreview();
+        refreshBulkCount();
+      });
+      selection.append(ch);
+    }else{
+      selection.textContent="—";
+    }
     const name=document.createElement("td");
     const label=document.createElement("strong");
     label.textContent=p.nombre_completo;
@@ -447,12 +629,12 @@ function displayAdminRows() {
     } else {
       action.textContent="—";
     }
-    tr.append(name,correo,cargos,estado,action);
+    tr.append(selection,name,correo,cargos,estado,action);
     body.append(tr);
   }
   if(!filtered.length){
     const tr=document.createElement("tr"),td=document.createElement("td");
-    td.colSpan=5;td.textContent="No hay participantes que coincidan con la búsqueda.";
+    td.colSpan=6;td.textContent="No hay participantes que coincidan con la búsqueda.";
     tr.append(td);body.append(tr);
   }
 }
@@ -470,6 +652,9 @@ async function loadAdminUsers() {
     }
     if(!data||!Array.isArray(data.participantes))throw Error(data?.error||"Respuesta administrativa no válida");
     state.adminUsers=data.participantes;
+    state.bulkSelected.clear();
+    resetBulkPreview();
+    refreshBulkCount();
     byId("adminTotal").textContent=String(data.resumen?.total??"—");
     byId("adminLinked").textContent=String(data.resumen?.cuentas_vinculadas??"—");
     byId("adminPending").textContent=String(data.resumen?.invitaciones_pendientes??"—");
@@ -479,6 +664,9 @@ async function loadAdminUsers() {
   }catch(e){
     byId("adminMsg").textContent="No se pudo consultar el panel: "+String(e.message||e)+". Comprueba el despliegue y los permisos del servidor.";
     state.adminUsers=[];
+    state.bulkSelected.clear();
+    resetBulkPreview();
+    refreshBulkCount();
     byId("adminRows").replaceChildren();
   }finally{byId("adminRefresh").disabled=false}
 }
@@ -517,8 +705,8 @@ byId("adminOpenBtn").addEventListener("click",()=>{
   loadAdminUsers();
 });
 byId("adminRefresh").addEventListener("click",loadAdminUsers);
-byId("adminSearch").addEventListener("input",displayAdminRows);
-byId("adminClose").addEventListener("click",()=>{byId("adminBoard").hidden=true;resetAdminPreview();});
+byId("adminSearch").addEventListener("input",()=>{resetBulkPreview();displayAdminRows()});
+byId("adminClose").addEventListener("click",()=>{byId("adminBoard").hidden=true;resetAdminPreview();clearBulkSelection();});
 
 byId("emailForm").addEventListener("submit",async e=>{e.preventDefault();if(!state.client)return;
   const email=byId("email").value.trim().toLowerCase();if(!email)return;
@@ -565,7 +753,7 @@ byId("resendBtn").addEventListener("click",async()=>{
   finally{busy("resendBtn",false)}
 });
 byId("changeEmail").addEventListener("click",()=>{byId("otp").value="";show("login","Acceso personal")});
-byId("logoutBtn").addEventListener("click",async()=>{if(state.client)await state.client.auth.signOut();state.email="";state.adminUsers=[];resetAdminPreview();byId("adminBoard").hidden=true;byId("adminOpenBtn").hidden=true;byId("securityTestBtn").hidden=true;byId("securityTestResult").hidden=true;show("login","Acceso personal");notice("Sesión cerrada correctamente.","success")});
+byId("logoutBtn").addEventListener("click",async()=>{if(state.client)await state.client.auth.signOut();state.email="";state.adminUsers=[];state.bulkSelected.clear();resetBulkPreview();resetAdminPreview();byId("adminBoard").hidden=true;byId("adminOpenBtn").hidden=true;byId("securityTestBtn").hidden=true;byId("securityTestResult").hidden=true;show("login","Acceso personal");notice("Sesión cerrada correctamente.","success")});
 window.addEventListener("DOMContentLoaded",restore);
 })();
 </script>
