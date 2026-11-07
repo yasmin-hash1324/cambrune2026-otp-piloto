@@ -42,7 +42,7 @@ CREATE POLICY cambrune_actividades_lectura_autorizada
            AND p.activo = TRUE
            AND (
              r.rol IN ('presidencia','vicepresidencia','fiscalia')
-             OR (r.comision_id = comision_id
+             OR (r.comision_id = public.cambrune_actividades.comision_id
                  AND r.rol IN ('integrante','coordinador','supervisor'))
            )
        )
